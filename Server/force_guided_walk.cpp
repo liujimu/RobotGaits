@@ -251,13 +251,22 @@ int WalkLastStep(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 
 Aris::Core::MSG parseForceGuidedWalk(const std::string &cmd, const std::map<std::string, std::string> &params)
 {
+    isStoppingCWF = false;
 
+    Robots::GAIT_PARAM_BASE param;
+    Aris::Core::MSG msg;
+    msg.CopyStruct(param);
+    return msg;
 }
 
 
 Aris::Core::MSG parseForceGuidedWalkStop(const std::string &cmd, const std::map<std::string, std::string> &params)
 {
+    isStoppingCWF = true;
 
+    Aris::Core::MSG msg;
+
+    return msg;
 }
 
 double Hermite3(double x, double x1, double x2, double y1, double y2, double m1, double m2)

@@ -33,7 +33,7 @@ int main()
 	auto rs = Robots::ROBOT_SERVER::GetInstance();
 	rs->CreateRobot<Robots::ROBOT_TYPE_I>();
 #ifdef PLATFORM_IS_LINUX
-    rs->LoadXml("/home/hex/Desktop/RobotGaits_BY_LJM/resource/Robot_III/Robot_VIII.xml");
+    rs->LoadXml("/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_VIII.xml");
 #endif
 #ifdef PLATFORM_IS_WINDOWS
 	rs->LoadXml("C:\\Robots\\resource\\Robot_Type_I\\Robot_III\\Robot_III.xml");

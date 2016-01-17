@@ -27,11 +27,11 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
     char order[4]="313";
 
     //下列数组的顺序是相对于机器人身体的xyz轴
-    const double M{1};
-    const double K[6]{0};
-    const double C[6]{2,2,2,2,2,2};
-    const double Fmax{1};
+    double M{1};
+    double K[6]{0};
+    double C[6]{2,2,2,2,2,2};
     double F[6]{0,0.5,0,0.5,0,0};
+    const double Fmax{1};
 
     double d=0.5;
     double h=0.05;
@@ -97,11 +97,11 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                 pRobot->GetBodyPe(beginBodyPE);
                 pRobot->GetPee(beginPee);
 
-                std::memset(bodyPE, 0 ,sizeof(prevBodyPE));
-                std::memset(bodyVel, 0, sizeof(prevBodyVel));
+                std::memset(bodyPE, 0 ,sizeof(bodyPE));
+                std::memset(bodyVel, 0, sizeof(bodyVel));
 
                 rt_printf("realForceData: %f %f %f\n",realForce[0],realForce[1],realForce[2]);
-                rt_printf("beginBodyPE: %f %f %f\n",realParam.beginBodyPE[0],realParam.beginBodyPE[1],realParam.beginBodyPE[2]);
+                rt_printf("beginBodyPE: %f %f %f\n",beginBodyPE[0],beginBodyPE[1],beginBodyPE[2]);
                 rt_printf("PushDirection: %c\n", s2r[forceIndex]+'x');
             }
         }
@@ -156,9 +156,10 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             {
                 std::memset(F, 0, sizeof(F));
             }
+            double bodyAcc[6]{0};
             for (int i=0;i<6;i++)
             {
-                bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyPE[i]) / M[i];
+                bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyPE[i]) / M;
                 bodyVel[i] += bodyAcc[i] * clockPeriod;
                 bodyPE[i] += bodyVel[i] * clockPeriod;
                 if(bodyPE[1] < 0)
@@ -187,7 +188,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                     , pEE[0], pEE[1], pEE[2], pEE[3], pEE[4], pEE[5], pEE[6], pEE[7], pEE[8]
                     , pEE[9], pEE[10], pEE[11], pEE[12], pEE[13], pEE[14], pEE[15], pEE[16], pEE[17]);
                 rt_printf("pBodyPE: %f %f %f %f %f %f\n"
-                    , pBody[0], pBody[1], pBody[2], pBody[3], pBody[4], pBody[5]);
+                    , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
 
                 isWalking=false;
             }
@@ -206,6 +207,19 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 
 Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::string, std::string> &params)
 {
+    g_isStoppingPR = false;
 
+    Robots::GAIT_PARAM_BASE param;
+    Aris::Core::MSG msg;
+    msg.CopyStruct(param);
+    return msg;
 }
 
+
+Aris::Core::MSG parsePushRecoveryStop(const std::string &cmd, const std::map<std::string, std::string> &params)
+{
+    g_isStoppingPR = true;
+
+    Aris::Core::MSG msg;
+    return msg;
+}
