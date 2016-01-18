@@ -570,7 +570,7 @@
               <homeLowSpeed index="0x6099" subIndex="2" value="100000" type="int32"/>
               <RatioOfPosDivVel_Numerator index="0x6096" subIndex="1" value="1" type="int32"/>
               <RatioOfPosDivVel_Divisor index="0x6096" subIndex="2" value="1" type="int32"/>
-              <homeTorqueLimit index="0x2020" subIndex="1" value="950" type="int32"/>
+              <homeTorqueLimit index="0x2020" subIndex="1" value="50" type="int32"/>
               <p2pMaxSpeed index="0x607F" subIndex="0" value="2560" type="int32"/>
               <p2pSpeed index="0x6081" subIndex="0" value="1792" type="int32"/>
               <homeOffset index="0x607C" subIndex="0" value="0" type="int32"/>
@@ -599,6 +599,7 @@
         </SlaveType>
         <Slave>
           <Motion1 type="ElmoSoloWhistle" maxSpeed="5417642"/>
+          <ForceSensor type="AtiForceSensor"/>
           <Motion2 type="ElmoSoloWhistle" maxSpeed="5417642"/>
           <Motion3 type="ElmoSoloWhistle" maxSpeed="5417642"/>
           <Motion4 type="ElmoSoloWhistle" maxSpeed="5417642"/>
@@ -616,12 +617,11 @@
           <Motion16 type="ElmoSoloWhistle" maxSpeed="5417642"/>
           <Motion17 type="ElmoSoloWhistle" maxSpeed="5417642"/>
           <Motion18 type="ElmoSoloWhistle" maxSpeed="5417642"/>
-          <ForceSensor type="AtiForceSensor"/>
         </Slave>
       </EtherCat>
     </Control>
     <Sensors>
-      <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
+      <IMU active="false" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
       <Vision type="kinect2.0"/>
     </Sensors> 
   </Server>
