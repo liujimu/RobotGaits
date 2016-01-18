@@ -26,27 +26,14 @@
 #define PI 3.141592653589793
 #endif
 
-using namespace Aris::Core;
-//using namespace std;
-
-enum WALK_DIRECTION
+/*gait parameters*/
+struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
 {
-    STOP,
-    FORWARD,
-    BACKWARD,
-    RIGHTWARD,
-    LEFTWARD,
-    TURNLEFT,
-    TURNRIGHT,
-    FAST_TURNLEFT,
-    FAST_TURNRIGHT
-};
-
-struct FGW_PARAM final:public Robots::GAIT_PARAM_BASE
-{
-    std::int32_t totalCount{2000};
-    double stepLengthLimit{1};
-    double stepHeight{0.1};//行走步高
+    std::int32_t pushCount{1500};
+    std::int32_t recoverCount{5000};
+    std::int32_t totalCount{6000};
+    double d{0.5};//步长
+    double h{0.05};//步高
 };
 
 /*operation function*/
