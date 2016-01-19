@@ -17,13 +17,12 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
     static double s_bodyVel[6];
     static double s_recoverBodyPE[6];//插值起点
     static double s_recoverBodyVel[6];//插值起点
-    static double s_F[6]{0};
     static int s_fAxis;
     static int s_fSign;
 
     const double clockPeriod{0.001};
     const double forceThreshold[3]{40, 40, 80};//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{1000};//力传感器输出数值与实际作用力的比值，1或1000
+    const double forceAMFactor{1};//力传感器输出数值与实际作用力的比值，1或1000
     double forceOffsetAvg[3]{0};
     double realForce[3]{0};
     const int s2b[3]{2, 0, 1};//将力传感器的坐标系映射到机器人身体坐标系
@@ -42,27 +41,27 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
         {
             for(int i=0;i<3;i++)
             {
-                forceOffsetSum[i]=0;
+                forceOffsetSum[i] = 0;
             }
         }
-        forceOffsetSum[0]+=pPRP->pForceData->at(0).Fx;
-        forceOffsetSum[1]+=pPRP->pForceData->at(0).Fy;
-        forceOffsetSum[2]+=pPRP->pForceData->at(0).Fz;
+        forceOffsetSum[0] += pPRP->pForceData->at(0).Fx;
+        forceOffsetSum[1] += pPRP->pForceData->at(0).Fy;
+        forceOffsetSum[2] += pPRP->pForceData->at(0).Fz;
     }
 
     else
     {
-        for(int i=0;i<3;i++)
+        for(int i = 0; i < 3; i++)
         {
-            forceOffsetAvg[i]=forceOffsetSum[i]/100;
+            forceOffsetAvg[i] = forceOffsetSum[i] / 100;
         }
-        if(pPRP->count==100)
+        if(pPRP->count == 100)
         {
             rt_printf("forceOffsetAvg: %f %f %f\n",forceOffsetAvg[0],forceOffsetAvg[1],forceOffsetAvg[2]);
         }
-        realForce[0]=(pPRP->pForceData->at(0).Fx-forceOffsetAvg[0])/forceAMFactor;
-        realForce[1]=(pPRP->pForceData->at(0).Fy-forceOffsetAvg[1])/forceAMFactor;
-        realForce[2]=(pPRP->pForceData->at(0).Fz-forceOffsetAvg[2])/forceAMFactor;
+        realForce[0] = (pPRP->pForceData->at(0).Fx - forceOffsetAvg[0]) / forceAMFactor;
+        realForce[1] = (pPRP->pForceData->at(0).Fy - forceOffsetAvg[1]) / forceAMFactor;
+        realForce[2] = (pPRP->pForceData->at(0).Fz - forceOffsetAvg[2]) / forceAMFactor;
 
         /*检测力的方向，确定运动参数*/
         if(!isWalking)
@@ -83,17 +82,6 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             {
                 s_fAxis = s2b[forceIndex];
                 s_fSign = realForce[forceIndex] / std::fabs(realForce[forceIndex]);
-                std::memset(s_F, 0, sizeof(s_F));
-                if(s_fAxis == 1)
-                {
-                    s_F[s_fAxis] = 2 * s_fSign * Fv;
-                }
-                else
-                {
-                    s_F[s_fAxis] = s_fSign * Fh;
-                    s_F[1] = -1 * Fv;
-                    s_F[3] = (1 - s_fAxis) * s_fSign * Fr;
-                }
 
                 pRobot->GetPee(s_beginPee, "B");
                 pRobot->GetBodyPm(s_beginPm);
@@ -122,15 +110,25 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
         {
             double pEE[18];
             double pBodyPE[6];
-            double d = pPRP->d;
+            double d = s_fSign * pPRP->d;
             double h = pPRP->h;
             int count = pPRP->count - s_beginCount;
             int totalCount = pPRP->totalCount;
+            double F[6]{0};
 
             /*设置身体*/
-            if(count == pPRP->pushCount)
+            if(count < pPRP->pushCount)
             {
-                std::memset(s_F, 0, sizeof(s_F));
+                if(s_fAxis == 1)
+                {
+                    F[s_fAxis] = 2 * s_fSign * Fv;
+                }
+                else
+                {
+                    F[s_fAxis] = s_fSign * Fh;
+                    F[1] = -1 * Fv;
+                    F[3] = (1 - s_fAxis) * s_fSign * Fr;
+                }
             }
             //用阻抗模型计算身体位姿变化
             double bodyAcc[6]{0};
@@ -138,9 +136,10 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    bodyAcc[i] = (s_F[i] - C[i] * s_bodyVel[i] - K[i] * s_bodyPE[i]) / M;
+                    bodyAcc[i] = (F[i] - C[i] * s_bodyVel[i] - K[i] * s_bodyPE[i]) / M;
                     s_bodyVel[i] += bodyAcc[i] * clockPeriod;
                     s_bodyPE[i] += s_bodyVel[i] * clockPeriod;
+
                 }
                 if(count == (pPRP->recoverCount - 1))
                 {
@@ -154,19 +153,23 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                 double finalBodyPE[6]{0};
                 if(s_fAxis != 1)
                 {
-                    finalBodyPE[s_fAxis] = s_fSign * d;
+                    finalBodyPE[s_fAxis] = d;
                 }
                 for (int i = 0; i < 4; i++)
                 {
                     s_bodyPE[i]=Hermite3(count * clockPeriod, (pPRP->recoverCount - 1) * clockPeriod, (pPRP->totalCount - 1) * clockPeriod,
                                          s_recoverBodyPE[i], finalBodyPE[i], s_recoverBodyVel[i], 0);
+                    //for testing
+//                    rt_printf("count: %d\n", count);
+//                    rt_printf("s_BodyPE:\n %f %f %f %f %f %f\n\n"
+//                              , s_bodyPE[0], s_bodyPE[1], s_bodyPE[2], s_bodyPE[3], s_bodyPE[4], s_bodyPE[5]);
                 }
             }
             //转换到地面坐标系
             char order[4] = "313";
             if(s_fAxis == 2)
             {
-                std::strcpy(order, "131");
+                std::strcpy(order, "123");
             }
             double relativePm[16], absolutePm[16];
             Aris::DynKer::s_pe2pm(s_bodyPE, relativePm, order);
@@ -221,25 +224,35 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             pRobot->SetPee(pEE2G, pBodyPE, "G");
 
             //For testing
-            if(count % 1000 == 0)
-            {
-                rt_printf("count: %d\n", count);
-                rt_printf("pEE:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-                          , pEE[0], pEE[1], pEE[2], pEE[3], pEE[4], pEE[5], pEE[6], pEE[7], pEE[8]
-                          , pEE[9], pEE[10], pEE[11], pEE[12], pEE[13], pEE[14], pEE[15], pEE[16], pEE[17]);
-                rt_printf("s_BodyPE:\n %f %f %f %f %f %f\n\n"
-                          , s_bodyPE[0], s_bodyPE[1], s_bodyPE[2], s_bodyPE[3], s_bodyPE[4], s_bodyPE[5]);
-                rt_printf("pEE2G:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-                          , pEE2G[0], pEE2G[1], pEE2G[2], pEE2G[3], pEE2G[4], pEE2G[5], pEE2G[6], pEE2G[7], pEE2G[8]
-                          , pEE2G[9], pEE2G[10], pEE2G[11], pEE2G[12], pEE2G[13], pEE2G[14], pEE2G[15], pEE2G[16], pEE2G[17]);
-                rt_printf("pBodyPE:\n %f %f %f %f %f %f\n\n"
-                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
-            }
+//            if(count % 1000 == 0)
+//            {
+//                rt_printf("count: %d\n", count);
+//                rt_printf("pEE:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
+//                          , pEE[0], pEE[1], pEE[2], pEE[3], pEE[4], pEE[5], pEE[6], pEE[7], pEE[8]
+//                          , pEE[9], pEE[10], pEE[11], pEE[12], pEE[13], pEE[14], pEE[15], pEE[16], pEE[17]);
+//                rt_printf("s_BodyPE:\n %f %f %f %f %f %f\n\n"
+//                          , s_bodyPE[0], s_bodyPE[1], s_bodyPE[2], s_bodyPE[3], s_bodyPE[4], s_bodyPE[5]);
+//                rt_printf("pEE2G:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
+//                          , pEE2G[0], pEE2G[1], pEE2G[2], pEE2G[3], pEE2G[4], pEE2G[5], pEE2G[6], pEE2G[7], pEE2G[8]
+//                          , pEE2G[9], pEE2G[10], pEE2G[11], pEE2G[12], pEE2G[13], pEE2G[14], pEE2G[15], pEE2G[16], pEE2G[17]);
+//                rt_printf("pBodyPE:\n %f %f %f %f %f %f\n\n"
+//                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
+//            }
+//            if(count > 4000 && (count+1)%50==0)
+//            {
+//                rt_printf("count: %d\n", count);
+//                rt_printf("pBodyPE:\n%f\t%f\t%f\t%f\t%f\t%f\n"
+//                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
+//                rt_printf("pEE2G:\n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n\n"
+//                          , pEE2G[0], pEE2G[1], pEE2G[2], pEE2G[3], pEE2G[4], pEE2G[5], pEE2G[6], pEE2G[7], pEE2G[8]
+//                        , pEE2G[9], pEE2G[10], pEE2G[11], pEE2G[12], pEE2G[13], pEE2G[14], pEE2G[15], pEE2G[16], pEE2G[17]);
+//            }
 
             //判断动作结束
             if(count == (totalCount - 1))
             {
-                isWalking=false;
+                isWalking = false;
+                s_fSign = 0;
             }
         }
     }
