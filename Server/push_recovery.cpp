@@ -29,10 +29,10 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 
     double M{1};
     double C[6]{1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
-    double K[6]{0, 1.5, 0, 1.5, 0, 0};
-    const double Fv{0.1};
-    const double Fh{0.5};
-    const double Fr{0.2};
+    double K[6]{0, 1, 0, 1, 0, 0};
+    double Fh = pPRP->d;
+    const double Fv{0.15};
+    const double Fr{0.3};
 
     //力传感器手动清零
     if (pPRP->count<100)
@@ -179,9 +179,9 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             std::copy_n(s_beginPee, 18, pEE);
             if(s_fAxis != 1)
             {
-                if(count < totalCount / 3)
+                if(count < pPRP->firstStepCount)
                 {
-                    double s = -(PI / 2) * cos(PI * (count + 1) / (totalCount / 3)) + PI / 2;
+                    double s = -(PI / 2) * cos(PI * (count + 1) / pPRP->firstStepCount) + PI / 2;
                     /*设置移动腿*/
                     for (int i = 0; i < 18; i += 6)
                     {
@@ -197,7 +197,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                 }
                 else if(count < totalCount)
                 {
-                    double s = -(PI / 2) * cos(PI * (count + 1 - totalCount / 3) / (totalCount - totalCount / 3)) + PI / 2;
+                    double s = -(PI / 2) * cos(PI * (count + 1 - pPRP->firstStepCount) / (totalCount - pPRP->firstStepCount)) + PI / 2;
                     /*设置移动腿*/
                     for (int i = 3; i < 18; i += 6)
                     {
@@ -284,6 +284,10 @@ Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::st
         else if (i.first == "totalCount")
         {
             param.totalCount = std::stoi(i.second);
+        }
+        else if (i.first == "firstStepCount")
+        {
+            param.firstStepCount = std::stoi(i.second);
         }
         else if (i.first == "distance")
         {

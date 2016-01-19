@@ -32,7 +32,8 @@ struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
     std::int32_t pushCount{1500};
     std::int32_t recoverCount{5000};
     std::int32_t totalCount{6000};
-    double d{0.5};//步长
+    std::int32_t firstStepCount{2000};
+    double d{0.4};//步长
     double h{0.05};//步高
 };
 
