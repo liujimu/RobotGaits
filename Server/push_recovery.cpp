@@ -33,7 +33,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
     double K[6]{0, 1.5, 0, 1.5, 0, 0};
     const double Fv{0.1};
     const double Fh{0.5};
-    const double Fr{0.3};
+    const double Fr{0.2};
 
     //力传感器手动清零
     if (pPRP->count<100)
@@ -95,7 +95,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                     s_F[3] = (1 - s_fAxis) * s_fSign * Fr;
                 }
 
-                pRobot->GetPee(s_beginPee);
+                pRobot->GetPee(s_beginPee, "B");
                 pRobot->GetBodyPm(s_beginPm);
                 std::memset(s_bodyPE, 0 ,sizeof(s_bodyPE));
                 std::memset(s_bodyVel, 0, sizeof(s_bodyVel));
@@ -106,7 +106,12 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                 //For testing
                 double beginBodyPE[6];
                 pRobot->GetBodyPe(beginBodyPE);
-                rt_printf("beginBodyPE: %f %f %f %f %f %f\n",beginBodyPE[0],beginBodyPE[1],beginBodyPE[2]);
+                rt_printf("beginBodyPE: %f %f %f %f %f %f\n"
+                          ,beginBodyPE[0],beginBodyPE[1],beginBodyPE[2],beginBodyPE[3],beginBodyPE[4],beginBodyPE[5]);
+                rt_printf("s_beginPee: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
+                          , s_beginPee[0], s_beginPee[1], s_beginPee[2], s_beginPee[3], s_beginPee[4], s_beginPee[5]
+                          , s_beginPee[6], s_beginPee[7], s_beginPee[8], s_beginPee[9], s_beginPee[10], s_beginPee[11]
+                          , s_beginPee[12], s_beginPee[13], s_beginPee[14], s_beginPee[15], s_beginPee[16], s_beginPee[17]);
                 rt_printf("realForceData: %f %f %f\n",realForce[0],realForce[1],realForce[2]);
                 rt_printf("PushDirection: %c%c\n", 44 - s_fSign, s2b[forceIndex] + 'x');
             }
@@ -140,6 +145,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                 if(count == (pPRP->recoverCount - 1))
                 {
                     std::copy_n(s_bodyPE, 6, s_recoverBodyPE);
+                    std::copy_n(s_bodyVel, 6, s_recoverBodyVel);
                 }
             }
             //超过recoverCount后，用两点Hermite插值调整身体至目标位姿
@@ -165,10 +171,9 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             double relativePm[16], absolutePm[16];
             Aris::DynKer::s_pe2pm(s_bodyPE, relativePm, order);
             Aris::DynKer::s_pm_dot_pm(s_beginPm, relativePm, absolutePm);
-            Aris::DynKer::s_pm2pe(absolutePm, pBodyPE, order);
+            Aris::DynKer::s_pm2pe(absolutePm, pBodyPE);
 
-
-            std::copy_n(s_beginPee, 6, pEE);
+            std::copy_n(s_beginPee, 18, pEE);
             if(s_fAxis != 1)
             {
                 if(count < totalCount / 3)
@@ -189,7 +194,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                 }
                 else if(count < totalCount)
                 {
-                    double s = -(PI / 2) * cos(PI * (count - totalCount / 3 + 1) / (totalCount - totalCount / 3)) + PI / 2;
+                    double s = -(PI / 2) * cos(PI * (count + 1 - totalCount / 3) / (totalCount - totalCount / 3)) + PI / 2;
                     /*设置移动腿*/
                     for (int i = 3; i < 18; i += 6)
                     {
@@ -197,7 +202,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
                         pEE[i + s_fAxis] = d / 2 * (1 - cos(s)) + s_beginPee[i + s_fAxis];
                     }
                     /*设置支撑腿*/
-                    for (int i = 1; i < 18; i += 6)
+                    for (int i = 0; i < 18; i += 6)
                     {
                         pEE[i + 1] = s_beginPee[i + 1];
                         pEE[i + s_fAxis] = s_beginPee[i + s_fAxis] + d;
@@ -213,18 +218,27 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             }
 
             /*计算完毕，更新pRobot*/
-            pRobot->SetPee(pEE, pBodyPE, "G");
+            pRobot->SetPee(pEE2G, pBodyPE, "G");
+
+            //For testing
+            if(count % 1000 == 0)
+            {
+                rt_printf("count: %d\n", count);
+                rt_printf("pEE:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
+                          , pEE[0], pEE[1], pEE[2], pEE[3], pEE[4], pEE[5], pEE[6], pEE[7], pEE[8]
+                          , pEE[9], pEE[10], pEE[11], pEE[12], pEE[13], pEE[14], pEE[15], pEE[16], pEE[17]);
+                rt_printf("s_BodyPE:\n %f %f %f %f %f %f\n\n"
+                          , s_bodyPE[0], s_bodyPE[1], s_bodyPE[2], s_bodyPE[3], s_bodyPE[4], s_bodyPE[5]);
+                rt_printf("pEE2G:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
+                          , pEE2G[0], pEE2G[1], pEE2G[2], pEE2G[3], pEE2G[4], pEE2G[5], pEE2G[6], pEE2G[7], pEE2G[8]
+                          , pEE2G[9], pEE2G[10], pEE2G[11], pEE2G[12], pEE2G[13], pEE2G[14], pEE2G[15], pEE2G[16], pEE2G[17]);
+                rt_printf("pBodyPE:\n %f %f %f %f %f %f\n\n"
+                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
+            }
 
             //判断动作结束
             if(count == (totalCount - 1))
             {
-                rt_printf("Finish One Walking Step\n");
-                rt_printf("pEE: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-                    , pEE[0], pEE[1], pEE[2], pEE[3], pEE[4], pEE[5], pEE[6], pEE[7], pEE[8]
-                    , pEE[9], pEE[10], pEE[11], pEE[12], pEE[13], pEE[14], pEE[15], pEE[16], pEE[17]);
-                rt_printf("pBodyPE: %f %f %f %f %f %f\n"
-                    , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
-
                 isWalking=false;
             }
         }
