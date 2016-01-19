@@ -29,10 +29,10 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 
     double M{1};
     double C[6]{1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
-    double K[6]{0, 1, 0, 1, 0, 0};
+    double K[6]{0, 1.15, 0, 1.15, 0, 0};
     double Fh = pPRP->d;
-    const double Fv{0.15};
-    const double Fr{0.3};
+    double Fv = 2.5 * pPRP->descend;
+    double Fr = 0.0436 * pPRP->angle;
 
     //力传感器手动清零
     if (pPRP->count<100)
