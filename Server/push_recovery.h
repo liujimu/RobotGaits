@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <atomic>
 
+#include <Aris_Pipe.h>
+
 #include <Aris_Core.h>
 #include <Aris_Message.h>
 #include <Aris_Control.h>
@@ -26,6 +28,18 @@
 #define PI 3.141592653589793
 #endif
 
+/*pipe parameters*/
+struct PR_PIPE_PARAM
+{
+    int count;
+    double pIn[18]{ 0 };
+    double pEE[18]{ 0 };
+    double bodyPE[6]{ 0 };
+};
+
+extern Aris::Control::PIPE<PR_PIPE_PARAM> pushRecoveryPipe;
+static std::thread pushRecoveryThread;
+
 /*gait parameters*/
 struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
 {
@@ -35,8 +49,8 @@ struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
     std::int32_t firstStepCount{2000};
     double d{0.4};//步长
     double h{0.05};//步高
-    double angle{5};//
-    double descend{0.04};//
+    double angle{5};//身体最大摆角
+    double descend{0.04};//身体下降高度
 };
 
 /*operation function*/

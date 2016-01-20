@@ -25,7 +25,7 @@ FUNCTION(PREPEND_H var prefix)
    SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND_H)
 
-project(CMakeDemo_by_PY)
+project(RobotGaits_by_LJM)
 
 if(UNIX)
 	set(CMAKE_C_COMPILER "/usr/bin/gcc")

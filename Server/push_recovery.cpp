@@ -1,6 +1,6 @@
 #include "push_recovery.h"
 
-using namespace Aris::DynKer;
+Aris::Control::PIPE<PR_PIPE_PARAM> pushRecoveryPipe(12,true);
 
 std::atomic_bool g_isStoppingPR;
 
@@ -29,10 +29,10 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 
     double M{1};
     double C[6]{1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
-    double K[6]{0, 1.15, 0, 1.15, 0, 0};
-    double Fh = pPRP->d;
+    double K[6]{0, 1.14, 0, 1.14, 0, 0};
+    double Fh = 1.5 * pPRP->d;
     double Fv = 2.5 * pPRP->descend;
-    double Fr = 0.0436 * pPRP->angle;
+    double Fr = 0.0427 * pPRP->angle;
 
     //力传感器手动清零
     if (pPRP->count<100)
@@ -238,15 +238,13 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 //                rt_printf("pBodyPE:\n %f %f %f %f %f %f\n\n"
 //                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
 //            }
-//            if(count > 4000 && (count+1)%50==0)
-//            {
-//                rt_printf("count: %d\n", count);
-//                rt_printf("pBodyPE:\n%f\t%f\t%f\t%f\t%f\t%f\n"
-//                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
-//                rt_printf("pEE2G:\n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n\n"
-//                          , pEE2G[0], pEE2G[1], pEE2G[2], pEE2G[3], pEE2G[4], pEE2G[5], pEE2G[6], pEE2G[7], pEE2G[8]
-//                        , pEE2G[9], pEE2G[10], pEE2G[11], pEE2G[12], pEE2G[13], pEE2G[14], pEE2G[15], pEE2G[16], pEE2G[17]);
-//            }
+            PR_PIPE_PARAM prPipe;
+            prPipe.count=count;
+            pRobot->GetPin(prPipe.pIn);
+            pRobot->GetPee(prPipe.pEE);
+            pRobot->GetBodyPe(prPipe.bodyPE);
+            pushRecoveryPipe.SendToNRT(prPipe);
+
 
             //判断动作结束
             if(count == (totalCount - 1))
@@ -297,7 +295,14 @@ Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::st
         {
             param.h = stod(i.second);
         }
-    }
+        else if (i.first == "angle")
+        {
+            param.angle = stod(i.second);
+        }
+        else if (i.first == "descend")
+        {
+            param.descend = stod(i.second);
+        }    }
 
     g_isStoppingPR = false;
 

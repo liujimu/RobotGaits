@@ -16,7 +16,7 @@ using namespace std;
 #endif
 
 
-
+#include <Aris_Pipe.h>
 #include <Aris_Core.h>
 #include <Aris_Message.h>
 #include <Aris_IMU.h>
@@ -28,8 +28,12 @@ using namespace std;
 
 using namespace Aris::Core;
 
+void startRecordGaitData();//记录步态执行过程中的数据，用于分析
+
 int main()
 {
+    startRecordGaitData();
+
 	auto rs = Robots::ROBOT_SERVER::GetInstance();
 	rs->CreateRobot<Robots::ROBOT_TYPE_I>();
 #ifdef PLATFORM_IS_LINUX
@@ -54,4 +58,42 @@ int main()
 	Aris::Core::RunMsgLoop();
 
 	return 0;
+}
+
+void startRecordGaitData()
+{
+    pushRecoveryThread = std::thread([&]()
+    {
+        struct PR_PIPE_PARAM param;
+        static std::fstream fileGait;
+        std::string name = Aris::Core::logFileName();
+        name.replace(name.rfind("log.txt"), std::strlen("gait.txt"), "gait.txt");
+        fileGait.open(name.c_str(), std::ios::out | std::ios::trunc);
+
+        while (1)
+        {
+            pushRecoveryPipe.RecvInNRT(param);
+
+            if(param.count > 0)
+            {
+                fileGait << param.count;
+                for(int i = 0; i < 18; i++)
+                {
+                    fileGait << "\t" << param.pIn[i];
+                }
+                for(int i = 0; i < 18; i++)
+                {
+                    fileGait << "\t" << param.pEE[i];
+                }
+                for(int i = 0; i < 6; i++)
+                {
+                    fileGait << "\t" << param.bodyPE[i];
+                }
+                fileGait << endl;
+            }
+        }
+
+        fileGait.close();
+    });
+
 }
