@@ -43,11 +43,11 @@ static std::thread pushRecoveryThread;
 /*gait parameters*/
 struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
 {
-    std::int32_t pushCount{1500};
+    std::int32_t pushCount{1000};
     std::int32_t recoverCount{4000};
     std::int32_t totalCount{5000};
     std::int32_t firstStepCount{2000};
-    double d{0.4};//步长
+    double d{0.3};//步长
     double h{0.05};//步高
     double angle{5};//身体最大摆角
     double descend{0.04};//身体下降高度

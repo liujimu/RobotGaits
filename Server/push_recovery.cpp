@@ -22,7 +22,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 
     const double clockPeriod{0.001};
     const double forceThreshold[3]{40, 40, 80};//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{1};//力传感器输出数值与实际作用力的比值，1或1000
+    const double forceAMFactor{1000};//力传感器输出数值与实际作用力的比值，1或1000
     double forceOffsetAvg[3]{0};
     double realForce[3]{0};
     const int s2b[3]{2, 0, 1};//将力传感器的坐标系映射到机器人身体坐标系
@@ -121,7 +121,7 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
             {
                 if(s_fAxis == 1)
                 {
-                    F[s_fAxis] = 2 * s_fSign * Fv;
+                    F[s_fAxis] = 2.5 * s_fSign * Fv;
                 }
                 else
                 {
