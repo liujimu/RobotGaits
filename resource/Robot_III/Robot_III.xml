@@ -498,7 +498,7 @@
           <distance abbreviation="d" type="double" default="0.3"/>
           <height abbreviation="h" type="double" default="0.05"/>
           <angle abbreviation="a" type="double" default="5"/>
-          <descend abbreviation="c" type="double" default="0.04"/>
+          <descend abbreviation="c" type="double" default="0.025"/>
         </pr_param>
       </pr>
       <prs/>

@@ -21,8 +21,8 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
     static int s_fSign;
 
     const double clockPeriod{0.001};
-    const double forceThreshold[3]{40, 40, 80};//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{1000};//力传感器输出数值与实际作用力的比值，1或1000
+    const double forceThreshold[3]{100, 100, 100};//力传感器的触发阈值,单位N或Nm
+    const double forceAMFactor{1};//力传感器输出数值与实际作用力的比值，1或1000
     double forceOffsetAvg[3]{0};
     double realForce[3]{0};
     const int s2b[3]{2, 0, 1};//将力传感器的坐标系映射到机器人身体坐标系
@@ -238,13 +238,14 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
 //                rt_printf("pBodyPE:\n %f %f %f %f %f %f\n\n"
 //                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
 //            }
+
+            //PIPE
             PR_PIPE_PARAM prPipe;
             prPipe.count=count;
             pRobot->GetPin(prPipe.pIn);
-            pRobot->GetPee(prPipe.pEE);
+            pRobot->GetPee(prPipe.pEE, "B");
             pRobot->GetBodyPe(prPipe.bodyPE);
             pushRecoveryPipe.SendToNRT(prPipe);
-
 
             //判断动作结束
             if(count == (totalCount - 1))

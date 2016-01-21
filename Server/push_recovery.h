@@ -50,7 +50,7 @@ struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
     double d{0.3};//步长
     double h{0.05};//步高
     double angle{5};//身体最大摆角
-    double descend{0.04};//身体下降高度
+    double descend{0.025};//身体下降高度
 };
 
 /*operation function*/
