@@ -6,50 +6,47 @@ std::atomic_bool g_isStoppingFGW;
 
 int ForceGuidedWalk(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pParam)
 {
-    const FGW_PARAM *pFGWP = static_cast<const Robots::WALK_PARAM *>(pParam);
+    const FGW_PARAM *pFGWP = static_cast<const FGW_PARAM *>(pParam);
 
     static bool s_isWalking{false};
     static bool s_isLastStep{false};
 
     static int s_walkBeginCount{0};
     static double s_forceOffsetSum[3]{0};
+    static int s_forceIndex{0};
 
-    static double s_prevBodyPE[6]{0};
-    static double s_prevBodyVel[6]{0};
-    static double s_prevPee[18]{0};
-    static double s_prevVee[18]{0};
+    static double s_beginPm[16];
+    static double s_beginPee[18];
+    static double s_prevBodyDspl;//上一毫秒身体的位移
+    static double s_prevBodyVel;//上一毫秒身体的速度
 
-    const double CLOCK_PERIOD{0.001};
-    const double FORCE_MAX{1};
-    const double MASS{1};
-    const double DAMP{4};
-    const double FORCE_FACTOR{0.001};
-    const double FORCE_THRESHOLD[3]{40,40,40};//力传感器的触发阈值,单位N或Nm
+    const double kClockPeriod{0.001};
+    const double M{1};
+    const double C{3};
+    const double kForceMax{1};
+    const double kForceAmpliFactor{1000};
+    const double kForceNormaliFactor{100};
+    const double kForceThreshold[3]{40,40,40};//力传感器的触发阈值,单位N或Nm
+    const int S2B[3]{2, 0, 1};//将力传感器的坐标系映射到机器人身体坐标系
 
-    double forceOffsetAvg[3]{0};
-    double realForce[3]{0};
-    double pBodyPE[6];
-    double pEE[18];
+    double forceOffsetAvg[2]{0};
+    double realForce[2]{0};
 
-    //力传感器手动清零
+    /*记录前100ms力传感器的数值，用于手动清零*/
     if (pCWFP->count < 100)
     {
         if(pCWFP->count == 0)
         {
-            for(int i = 0; i < 3; i++)
-            {
-                forceOffsetSum[i] = 0;
-            }
+            std::memset(forceOffsetSum, 0, sizeof(forceOffsetSum));
         }
         s_forceOffsetSum[0] += pFGWP->pForceData->at(0).Fx;
         s_forceOffsetSum[1] += pFGWP->pForceData->at(0).Fy;
-        s_forceOffsetSum[2] += pFGWP->pForceData->at(0).Mz;
     }
-    //步态主体
+    /*步态主体*/
     else
     {
-        //对力信号进行标准化处理
-        for(int i = 0; i < 3; i++)
+        /*对力信号进行清零*/
+        for(int i = 0; i < 2; i++)
         {
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
         }
@@ -57,105 +54,123 @@ int ForceGuidedWalk(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE *
         {
             rt_printf("forceOffsetAvg: %f %f %f\n",forceOffsetAvg[0],forceOffsetAvg[1],forceOffsetAvg[2]);
         }
-        realForce[0] = (pFGWP->pForceData->at(0).Fx - forceOffsetAvg[0]) * FORCE_FACTOR;
-        realForce[1] = (pFGWP->pForceData->at(0).Fy - forceOffsetAvg[1]) * FORCE_FACTOR;
-        realForce[2] = (pFGWP->pForceData->at(0).Mz - forceOffsetAvg[2]) * FORCE_FACTOR;
-
-        //暂时只考虑前后方向上的行走
-        if(std::fabs(realForce[0]) > FORCE_MAX)
+        realForce[0] = (pFGWP->pForceData->at(0).Fx - forceOffsetAvg[0]) / kForceAmpliFactor;
+        realForce[1] = (pFGWP->pForceData->at(0).Fy - forceOffsetAvg[1]) / kForceAmpliFactor;
+        /*检测力的方向，确定运动参数*/
+        if(!isWalking)
         {
-            realForce[0] = realForce[0] / std::fabs(realForce[0]) * FORCE_MAX;
-        }
-        else if(std::fabs(realForce[0]) < FORCE_THRESHOLD)
-        {
-            realForce[0] = 0;
-        }
+            forceIndex{-1};
+            double forceMax{0};
+            for(int i = 0; i < 3; i++)
+            {
+                double forceTmp = std::fabs(realForce[i]) - kForceThreshold[i];
+                if(forceTmp > forceMax)
+                {
+                    s_forceIndex = i;
+                    forceMax = forceTmp;
+                }
+            }
 
-        double pEE[18];
-        double pBodyPE[6];
-
-        if(!s_isWalking)
-        {
-            if(realForce[0] != 0)
+            if(s_forceIndex >= 0)
             {
                 s_isWalking = true;
-                s_walkBeginCount=pFGWP->count;
-                pRobot->GetPee(realParam.beginPee);
-                pRobot->GetBodyPe(realParam.beginBodyPE);
-                std::copy_n(realParam.beginPee,18,s_prevPee);
-                std::copy_n(realParam.beginBodyPE,6,s_prevBodyPE);
-                std::memset(s_prevVee,0,sizeof(s_prevVee));
-                std::memset(s_prevBodyVel,0,sizeof(s_prevBodyVel));
+                s_walkBeginCount = pFGWP->count + 1;
+
+                s_prevBodyDspl = 0;
+                s_prevBodyVel = 0;
             }
         }
+
+        /*运动规划*/
         else
         {
-            realParam.count = pFGWP->count - s_walkBeginCount;
-            if (pRealParam->count < pRealParam->totalCount)
+            int count = (pFGWP->count - s_beginCount) % pFGWP->totalCount;
+            double pEE[18];
+            double pBodyPE[6];
+            double h = pFGWP->stepHeight;
+
+            double F = realForce[s_forceIndex] / kForceNormaliFactor * kForceMax;
+            if(F > kForceMax)
             {
-                int count = pRealParam->count;
-                double s = -(PI / 2)*cos(PI * (count + 1) / totalCount) + PI / 2;
+                F = kForceMax;
+            }
+            else if(std::fabs(F) < kForceThreshold[s_forceIndex] / kForceNormaliFactor * kForceMax)
+            {
+                F = 0;
+            }
+
+            if(!s_isLastStep)
+            {
+                /*设置身体*/
+                //用阻抗模型计算身体位姿变化
+                double bodyAcc = (F - C * s_prevBodyVel) / M;
+                s_prevBodyVel += bodyAcc * kClockPeriod;
+                s_prevBodyDspl += s_prevBodyVel * kClockPeriod;
+
+                //预估身体在totalCount时的位置、速度
+                double remianTime = (pFGWP->totalCount - count - 1) * kClockPeriod;
+                double bodyPeFinal = M / C * (kClockPeriod - F / C) * (1 - std::exp(-C / M * remianTime)) + F / C * remianTime + s_prevBodyDspl;
+                double bodyVelFinal =(s_prevBodyVel - F / C) * std::exp(-C / M * remianTime) + F / C;
+
+                /*设置足尖位置*/
+                std::copy_n(s_beginPee, 18, pEE);
+                int fAxis = S2B[s_forceIndex];
+                int parity = ((pFGWP->count - s_beginCount) / pFGWP->totalCount) % 2; //计算迈腿顺序，parity=0为奇数步
                 /*设置移动腿*/
-                for (int i = 3; i < 18; i += 6)
+                /*设置足尖高度*/
+                if(count < (pFGWP->totalCount / 2))
                 {
-                    pEE[i + wAxis] = wSign*(d *cos(a + b)*(1 - cos(s)) / 2
-                        + wSign*(beginPee[i + wAxis] - beginBodyPE[wAxis]) * cos((1 - cos(s)) / 2 * b)
-                        - lSign*(beginPee[i + lAxis] - beginBodyPE[lAxis]) * sin((1 - cos(s)) / 2 * b))
-                        + beginBodyPE[wAxis];
-                    pEE[i + uAxis] = uSign*h*sin(s)
-                        + beginPee[i + uAxis];
-                    pEE[i + lAxis] = lSign*(d *sin(a + b)*(1 - cos(s)) / 2
-                        + wSign*(beginPee[i + wAxis] - beginBodyPE[wAxis]) * sin((1 - cos(s)) / 2 * b)
-                        + lSign*(beginPee[i + lAxis] - beginBodyPE[lAxis]) * cos((1 - cos(s)) / 2 * b))
-                        + beginBodyPE[lAxis];
+                    for (int i = parity; i < 18; i += 6)
+                    {
+                        pEE[i + 1] = s_beginPee[i + 1] + Hermite3((count + 1) * kClockPeriod, 0, pFGWP->totalCount / 2 * kClockPeriod, 0, pFGWP->stepHeight, 0, 0);//高度变化
+                    }
                 }
-                /*设置支撑腿*/
-                for (int i = 0; i < 18; i += 6)
+                else
                 {
-                    pEE[i + wAxis] = beginPee[i + wAxis];
-                    pEE[i + uAxis] = beginPee[i + uAxis];
-                    pEE[i + lAxis] = beginPee[i + lAxis];
+                    for (int i = parity; i < 18; i += 6)
+                    {
+                        pEE[i + 1] = s_beginPee[i + 1] + Hermite3((count + 1) * kClockPeriod, 0, pFGWP->totalCount / 2 * kClockPeriod, pFGWP->stepHeight, 0, 0, 0);//高度变化
+                    }
+                }
+
+                pEE[i + fAxis] = d / 2 * (1 - cos(s)) + s_beginPee[i + fAxis];//水平位置变化
+
+                /*设置支撑腿*/
+                for (int i = 3 * (1 - parity); i < 18; i += 6)
+                {
+                    pEE[i + 1] = s_beginPee[i + 1];
+                    pEE[i + fAxis] = s_beginPee[i + fAxis];
                 }
             }
+            /*规划最后一步*/
             else
             {
-                int count = pRealParam->count - pRealParam->totalCount;
-                double s = -(PI / 2)*cos(PI * (count + 1) / totalCount) + PI / 2;
-                /*设置移动腿*/
-                for (int i = 0; i < 18; i += 6)
-                {
-                    pEE[i + wAxis] = wSign*(d *cos(a + b)*(1 - cos(s)) / 2
-                        + wSign*(beginPee[i + wAxis] - beginBodyPE[wAxis]) * cos((1 - cos(s)) / 2 * b)
-                        - lSign*(beginPee[i + lAxis] - beginBodyPE[lAxis]) * sin((1 - cos(s)) / 2 * b))
-                        + beginBodyPE[wAxis];
-                    pEE[i + uAxis] = uSign*h*sin(s)
-                        + beginPee[i + uAxis];
-                    pEE[i + lAxis] = lSign*(d *sin(a + b)*(1 - cos(s)) / 2
-                        + wSign*(beginPee[i + wAxis] - beginBodyPE[wAxis]) * sin((1 - cos(s)) / 2 * b)
-                        + lSign*(beginPee[i + lAxis] - beginBodyPE[lAxis]) * cos((1 - cos(s)) / 2 * b))
-                        + beginBodyPE[lAxis];
-                }
-                /*设置支撑腿*/
-                for (int i = 3; i < 18; i += 6)
-                {
-                    pEE[i + wAxis] = wSign*(d *cos(a + b)
-                        + wSign*(beginPee[i + wAxis] - beginBodyPE[wAxis]) * cos(b)
-                        - lSign*(beginPee[i + lAxis] - beginBodyPE[lAxis]) * sin(b))
-                        + beginBodyPE[wAxis];
-                    pEE[i + uAxis] = 0
-                        + beginPee[i + uAxis];
-                    pEE[i + lAxis] = lSign*(d *sin(a + b)
-                        + wSign*(beginPee[i + wAxis] - beginBodyPE[wAxis]) * sin(b)
-                        + lSign*(beginPee[i + lAxis] - beginBodyPE[lAxis]) * cos(b))
-                        + beginBodyPE[lAxis];
-                }
+
             }
-            
-            int ret=Robots::walk(pRobot, &realParam);
-            if(ret==0)
+
+            double pEE2G[18];
+            double pBodyPE2G[6];
+            //将身体位资转换到地面坐标系
+            pBodyPE[s_forceIndex] = s_prevBodyDspl;
+            double relativePm[16], absolutePm[16];
+            Aris::DynKer::s_pe2pm(pBodyPE, relativePm, order);
+            Aris::DynKer::s_pm_dot_pm(s_beginPm, relativePm, absolutePm);
+            Aris::DynKer::s_pm2pe(absolutePm, pBodyPE2G);
+
+            //将足尖坐标转换到地面坐标系
+            for (int i = 0; i < 18; i += 3)
             {
-                if(s_prevBodyVel[2] == 0 && realForce[0] == 0)
-                s_isWalking=false;
+                Aris::DynKer::s_pm_dot_pnt(s_beginPm, pEE + i, pEE2G + i);
+            }
+
+            /*计算完毕，更新pRobot*/
+            pRobot->SetPee(pEE2G, pBodyPE, "G");
+
+            //判断动作结束
+            if(s_isLastStep && count == (totalCount - 1))
+            {
+                s_isWalking = false;
+                s_fSign = 0;
             }
         }
     }
