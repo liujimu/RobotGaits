@@ -35,11 +35,11 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
     double Fr = 0.0427 * pPRP->angle;
 
     //力传感器手动清零
-    if (pPRP->count<100)
+    if (pPRP->count < 100)
     {
-        if(pPRP->count==0)
+        if(pPRP->count == 0)
         {
-            for(int i=0;i<3;i++)
+            for(int i = 0; i < 3; i++)
             {
                 forceOffsetSum[i] = 0;
             }
@@ -303,7 +303,8 @@ Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::st
         else if (i.first == "descend")
         {
             param.descend = stod(i.second);
-        }    }
+        }
+    }
 
     g_isStoppingPR = false;
 
