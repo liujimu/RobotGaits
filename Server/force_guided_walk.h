@@ -22,6 +22,8 @@
 #include <Robot_Base.h>
 #include <Robot_Type_I.h>
 
+#include "interpolation.h"
+
 #ifndef PI
 #define PI 3.141592653589793
 #endif
@@ -39,6 +41,3 @@ int ForceGuidedWalk(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE *
 /*parse function*/
 Aris::Core::MSG parseForceGuidedWalk(const std::string &cmd, const std::map<std::string, std::string> &params);
 Aris::Core::MSG parseForceGuidedWalkStop(const std::string &cmd, const std::map<std::string, std::string> &params);
-
-/*calculation function*/
-double Hermite3(double x, double x1, double x2, double y1, double y2, double m1, double m2);

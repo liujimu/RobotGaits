@@ -24,6 +24,9 @@ using namespace std;
 #include <Robot_Gait.h>
 #include <Robot_Type_I.h>
 
+#include "move2.h"
+#include "continuous_walk_with_force.h"
+#include "push_recovery.h"
 #include "force_guided_walk.h"
 
 using namespace Aris::Core;
@@ -37,7 +40,7 @@ int main()
 	auto rs = Robots::ROBOT_SERVER::GetInstance();
 	rs->CreateRobot<Robots::ROBOT_TYPE_I>();
 #ifdef PLATFORM_IS_LINUX
-    rs->LoadXml("/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_FGW.xml");
+    rs->LoadXml("/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_LJM.xml");
 #endif
 #ifdef PLATFORM_IS_WINDOWS
 	rs->LoadXml("C:\\Robots\\resource\\Robot_Type_I\\Robot_III\\Robot_III.xml");
@@ -47,13 +50,16 @@ int main()
 	rs->AddGait("fw", Robots::fastWalk, Robots::parseFastWalk);
 	rs->AddGait("ro", Robots::resetOrigin, Robots::parseResetOrigin);
     //My gaits
+    rs->AddGait("move2", move2, parseMove2);
+    rs->AddGait("cwf", continuousWalkWithForce, parseCWF);
+    rs->AddGait("cwfs", continuousWalkWithForce, parseCWFStop);
+    rs->AddGait("pr", PushRecovery, parsePushRecovery);
+    rs->AddGait("prs", PushRecovery, parsePushRecoveryStop);
     rs->AddGait("fgw", ForceGuidedWalk, parseForceGuidedWalk);
     rs->AddGait("fgws", ForceGuidedWalk, parseForceGuidedWalkStop);
 
 	rs->Start();
-	std::cout<<"started"<<std::endl;
-
-	
+	std::cout<<"started"<<std::endl;	
 	
 	Aris::Core::RunMsgLoop();
 

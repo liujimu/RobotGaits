@@ -95,7 +95,7 @@ include_directories(${ALL_INCLUDE_DIR})
 link_directories(${ALL_LINK_DIR})
 
 ################################### build server ####################################
-set(SOURCE_FILES main.cpp force_guided_walk.cpp)
+set(SOURCE_FILES main.cpp interpolation.cpp move2.cpp continuous_walk_with_force.cpp force_guided_walk.cpp push_recovery.cpp)
 PREPEND(FULL_SRC Server ${SOURCE_FILES})
 add_executable(Server ${FULL_SRC})
 target_link_libraries(Server ${ALL_LINK_LIBS})

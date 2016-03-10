@@ -62,7 +62,7 @@ Aris::Core::MSG parseMove2(const std::string &cmd, const std::map<std::string, s
             else
             {
                 std::cout<<"parse failed"<<std::endl;
-                return MSG{};
+                return Aris::Core::MSG{};
             }
         }
         //绝对坐标移动
@@ -97,7 +97,7 @@ Aris::Core::MSG parseMove2(const std::string &cmd, const std::map<std::string, s
         else
         {
             std::cout<<"parse failed"<<std::endl;
-            return MSG{};
+            return Aris::Core::MSG{};
         }
     }
 
