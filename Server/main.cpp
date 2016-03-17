@@ -1,8 +1,6 @@
-﻿#include <Platform.h>
-
-#include <iostream>
+﻿#include <iostream>
 #include <cstring>
-#include <iomanip> 
+#include <iomanip>
 #include <bitset>
 #include <cstring>
 #include <map>
@@ -10,95 +8,71 @@
 
 using namespace std;
 
-
-#ifdef PLATFORM_IS_WINDOWS
-#define rt_printf printf
-#endif
-
-
-#include <Aris_Pipe.h>
-#include <Aris_Core.h>
-#include <Aris_Message.h>
-#include <Aris_IMU.h>
-#include <Robot_Server.h>
+#include <aris.h>
 #include <Robot_Gait.h>
 #include <Robot_Type_I.h>
 
-#include "move2.h"
+#ifdef WIN32
+#define rt_printf printf
+#endif
+#ifdef UNIX
+#include "rtdk.h"
+#include "unistd.h"
+#endif
+
 #include "continuous_walk_with_force.h"
-#include "push_recovery.h"
-#include "force_guided_walk.h"
 
 using namespace Aris::Core;
 
-//void startRecordGaitData();//记录步态执行过程中的数据，用于分析
-
-int main()
+int main(int argc, char *argv[])
 {
-//    startRecordGaitData();
+    std::string xml_address;
 
-	auto rs = Robots::ROBOT_SERVER::GetInstance();
-	rs->CreateRobot<Robots::ROBOT_TYPE_I>();
-#ifdef PLATFORM_IS_LINUX
-    rs->LoadXml("/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_LJM.xml");
-#endif
-#ifdef PLATFORM_IS_WINDOWS
-	rs->LoadXml("C:\\Robots\\resource\\Robot_Type_I\\Robot_III\\Robot_III.xml");
-#endif
-	rs->AddGait("wk", Robots::walk, Robots::parseWalk);
-	rs->AddGait("ad", Robots::adjust, Robots::parseAdjust);
-	rs->AddGait("fw", Robots::fastWalk, Robots::parseFastWalk);
-	rs->AddGait("ro", Robots::resetOrigin, Robots::parseResetOrigin);
-    //My gaits
-    rs->AddGait("move2", move2, parseMove2);
-    rs->AddGait("cwf", continuousWalkWithForce, parseCWF);
-    rs->AddGait("cwfs", continuousWalkWithForce, parseCWFStop);
-    rs->AddGait("pr", PushRecovery, parsePushRecovery);
-    rs->AddGait("prs", PushRecovery, parsePushRecoveryStop);
-    rs->AddGait("fgw", ForceGuidedWalk, parseForceGuidedWalk);
-    rs->AddGait("fgws", ForceGuidedWalk, parseForceGuidedWalkStop);
+    if (argc <= 1)
+    {
+        std::cout << "you did not type in robot name, in this case ROBOT-III will start" << std::endl;
+        xml_address = "/usr/Robots/resource/Robot_Type_I/Robot_III/Robot_III.xml";
+    }
+    else if (std::string(argv[1]) == "III")
+    {
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III.xml";
+    }
+    else if (std::string(argv[1]) == "VIII")
+    {
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_VIII/Robot_VIII.xml";
+    }
+    else
+    {
+        throw std::runtime_error("invalid robot name, please type in III or VIII");
+    }
 
-	rs->Start();
-	std::cout<<"started"<<std::endl;	
-	
-	Aris::Core::RunMsgLoop();
+    auto &rs = Aris::Server::ControlServer::instance();
 
-	return 0;
+    rs.createModel<Robots::RobotTypeI>();
+    rs.loadXml(xml_address.c_str());
+    rs.addCmd("en", Robots::basicParse, nullptr);
+    rs.addCmd("ds", Robots::basicParse, nullptr);
+    rs.addCmd("hm", Robots::basicParse, nullptr);
+    rs.addCmd("rc", Robots::recoverParse, Robots::recoverGait);
+    rs.addCmd("wk", Robots::walkParse, Robots::walkGait);
+
+    //my gaits
+    rs.addCmd("cwf", CWFParse, CWFGait);
+    rs.addCmd("cwf", CWFStopParse, CWFGait);
+
+    rs.open();
+
+    rs.setOnExit([&]()
+    {
+        Aris::Core::XmlDocument xml_doc;
+        xml_doc.LoadFile(xml_address.c_str());
+        auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("Model");
+        if (!model_xml_ele)throw std::runtime_error("can't find Model element in xml file");
+        rs.model().saveXml(*model_xml_ele);
+
+        Aris::Core::stopMsgLoop();
+    });
+    Aris::Core::runMsgLoop();
+
+    return 0;
 }
-
-//void startRecordGaitData()
-//{
-//    pushRecoveryThread = std::thread([&]()
-//    {
-//        struct PR_PIPE_PARAM param;
-//        static std::fstream fileGait;
-//        std::string name = Aris::Core::logFileName();
-//        name.replace(name.rfind("log.txt"), std::strlen("gait.txt"), "gait.txt");
-//        fileGait.open(name.c_str(), std::ios::out | std::ios::trunc);
-
-//        while (1)
-//        {
-//            pushRecoveryPipe.RecvInNRT(param);
-
-//            if(param.count > 0)
-//            {
-//                fileGait << param.count;
-//                for(int i = 0; i < 18; i++)
-//                {
-//                    fileGait << "\t" << param.pIn[i];
-//                }
-//                for(int i = 0; i < 18; i++)
-//                {
-//                    fileGait << "\t" << param.pEE[i];
-//                }
-//                for(int i = 0; i < 6; i++)
-//                {
-//                    fileGait << "\t" << param.bodyPE[i];
-//                }
-//                fileGait << endl;
-//            }
-//        }
-
-//        fileGait.close();
-//    });
-//}

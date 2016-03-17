@@ -14,18 +14,27 @@
 #include <stdlib.h>
 #include <atomic>
 
-#include <Aris_Core.h>
-#include <Aris_Message.h>
-#include <Aris_Control.h>
-#include <Aris_DynKer.h>
-#include <Robot_Server.h>
+#include <aris.h>
 #include <Robot_Gait.h>
 #include <Robot_Base.h>
-#include <Robot_Type_I.h>
 
 #ifndef PI
 #define PI 3.141592653589793
 #endif
+
+class state
+{
+public:
+    static state& getState()
+    {
+        static state s;
+        return s;
+    }
+    bool& isStopping() { return isStopping_; }
+private:
+    bool isStopping_{ true };
+    state() = default;
+};
 
 enum WALK_DIRECTION
 {
@@ -41,10 +50,9 @@ enum WALK_DIRECTION
 };
 
 /*parse function*/
-Aris::Core::MSG parseCWF(const std::string &cmd, const std::map<std::string, std::string> &params);
-Aris::Core::MSG parseCWFStop(const std::string &cmd, const std::map<std::string, std::string> &params);
+auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
+auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
 
 /*operation function*/
-int continuousWalk(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pParam);
-int continuousWalkWithForce(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pParam);
+auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int;
 WALK_DIRECTION forceJudge(const double *force, const double *threshold);

@@ -25,11 +25,11 @@ FUNCTION(PREPEND_H var prefix)
    SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND_H)
 
-project(RobotGaits_by_LJM)
+project(CMakeDemo_by_PY)
 
 if(UNIX)
-	set(CMAKE_C_COMPILER "/usr/bin/gcc")
-	set(CMAKE_CXX_COMPILER "/usr/bin/g++")
+        set(CMAKE_C_COMPILER "/usr/bin/gcc")
+        set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 #	set(CMAKE_C_COMPILER "/usr/bin/clang")
 #	set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 endif(UNIX)
@@ -49,93 +49,81 @@ if(UNIX)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif(UNIX)
 
+# set definitions to disable some warning
+if(WIN32)
+add_definitions(-DWIN32 -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+endif(WIN32)
+if(UNIX)
+add_definitions(-DUNIX)
+endif(UNIX)
+
 # set include and lib folders
 if(UNIX)
-set(GENERAL_INCLUDE_DIR "/usr/Aris_Dependent")
-set(SYSTEM_LINK_LIBS pthread gfortran)
-set(ROBOTS_INCLUDE_DIR "/usr/Robots/include")
-set(ROBOTS_LINK_DIR "/usr/Robots/lib")
-set(ROBOTS_LINK_LIBS Robot_Type_I Robot_Type_II Robot_Base Robot_Server Robot_Client)
-set(ARIS_INCLUDE_DIR "/usr/Aris/include")
-set(ARIS_LINK_DIR "/usr/Aris/lib")
-set(ARIS_LINK_LIBS Aris_Control Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Core)
-set(XENOMAI_INCLUDE_DIR "/usr/xenomai/include")
+set(GENERAL_INCL_DIR "/usr/Aris_Dependent")
+set(SYSTEM_LINK_LIB pthread)
+set(XENOMAI_INCL_DIR "/usr/xenomai/include")
 set(XENOMAI_LINK_DIR "/usr/xenomai/lib")
-set(XENOMAI_LINK_LIBS native rtdm xenomai)
-set(ETHERLAB_INCLUDE_DIR "/opt/etherlab/include")
+set(XENOMAI_LINK_LIB native rtdm xenomai)
+set(ETHERLAB_INCL_DIR "/opt/etherlab/include")
 set(ETHERLAB_LINK_DIR "/opt/etherlab/lib")
-set(ETHERLAB_LINK_LIBS ethercat rt)
-set(XSENS_INCLUDE_DIR "/usr/Aris_Dependent/xsens/include")
-set(XSENS_LINK_LIBS xdeviceclass xcommunication xstypes)
+set(ETHERLAB_LINK_LIB ethercat rt)
+set(XSENS_INCL_DIR "/usr/Aris_Dependent/xsens/include")
+set(XSENS_LINK_LIB xdeviceclass xcommunication xstypes)
 set(XSENS_LINK_DIR "/usr/Aris_Dependent/xsens/lib")
+set(XNNITE_INCL_DIR "/usr/include/nite")#Driver for kinect
+set(XNNITE_LINK_DIR "/usr/lib")
+set(XNNITE_LINK_LIB )
+set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
+set(OPENNI_LINK_DIR "/usr/lib")
+set(OPENNI_LINK_LIB OpenNI)
+set(ARIS_INCL_DIR "/usr/Aris/include")
+set(ARIS_LINK_DIR "/usr/Aris/lib")
+set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
+set(ROBOTS_INCL_DIR "/usr/Robots/include")
+set(ROBOTS_LINK_DIR "/usr/Robots/lib")
+set(ROBOTS_LINK_LIB Robot_Type_I Robot_Type_II Robot_Base)
 
-set(ALL_INCLUDE_DIR ${ROBOTS_INCLUDE_DIR} ${GENERAL_INCLUDE_DIR} ${ARIS_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${XSENS_INCLUDE_DIR} ${ETHERLAB_INCLUDE_DIR} ${XENOMAI_INCLUDE_DIR})
-set(ALL_LINK_DIR ${ROBOTS_LINK_DIR} ${ARIS_LINK_DIR} ${XSENS_LINK_DIR} ${ETHERLAB_LINK_DIR} ${XENOMAI_LINK_DIR})
-set(ALL_LINK_LIBS ${ROBOTS_LINK_LIBS} ${ARIS_LINK_LIBS} ${XSENS_LINK_LIBS} ${ETHERLAB_LINK_LIBS} ${XENOMAI_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+set(ALL_INCL_DIR ${ROBOTS_INCL_DIR} ${ARIS_INCL_DIR} ${OPENNI_INCL_DIR} ${XNNITE_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
+set(ALL_LINK_DIR ${ROBOTS_LINK_DIR} ${ARIS_LINK_DIR} ${OPENNI_LINK_DIR} ${XNNITE_LINK_DIR} ${XSENS_LINK_DIR} ${ETHERLAB_LINK_DIR} ${XENOMAI_LINK_DIR})
+set(ALL_LINK_LIB ${ROBOTS_LINK_LIB} ${ARIS_LINK_LIB} ${OPENNI_LINK_LIB} ${XNNITE_LINK_LIB} ${XSENS_LINK_LIB} ${ETHERLAB_LINK_LIB} ${XENOMAI_LINK_LIB} ${SYSTEM_LINK_LIB})
 endif(UNIX)
 if(WIN32)
-set(GENERAL_INCLUDE_DIR "C:/Aris_Dependent")
-set(SYSTEM_LINK_LIBS ws2_32 setupapi)
-set(ROBOTS_INCLUDE_DIR "C:/Robots/include")
-set(ROBOTS_LINK_DIR "C:/Robots/lib")
-set(ROBOTS_LINK_LIBS Robot_Type_I Robot_Type_II Robot_Base Robot_Server Robot_Client)
-set(ARIS_INCLUDE_DIR "C:/Aris/include")
-set(ARIS_LINK_DIR "C:/Aris/lib")
-set(ARIS_LINK_LIBS Aris_Plan Aris_Sensor Aris_DynKer Aris_ExpCal Aris_Core)
-set(XSENS_INCLUDE_DIR "C:/Aris_Dependent/xsens/include")
+set(GENERAL_INCL_DIR "C:/Aris_Dependent")
+set(SYSTEM_LINK_LIB ws2_32 setupapi)
+set(XSENS_INCL_DIR "C:/Aris_Dependent/xsens/include")
 set(XSENS_LINK_DIR "C:/Aris_Dependent/xsens/lib")
-set(XSENS_LINK_LIBS xdeviceclass)
+set(XSENS_LINK_LIB xdeviceclass)
+set(ARIS_INCL_DIR "C:/Aris/include")
+set(ARIS_LINK_DIR "C:/Aris/lib")
+set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
+set(ROBOTS_INCL_DIR "C:/Robots/include")
+set(ROBOTS_LINK_DIR "C:/Robots/lib")
+set(ROBOTS_LINK_LIB Robot_Type_I Robot_Type_II Robot_Base)
 
-set(ALL_INCLUDE_DIR ${ROBOTS_INCLUDE_DIR} ${GENERAL_INCLUDE_DIR} ${ARIS_INCLUDE_DIR} ${ETHERLAB_INCLUDE_DIR} ${XENOMAI_INCLUDE_DIR} ${LAPACK_INCLUDE_DIR} ${XSENS_INCLUDE_DIR})
-set(ALL_LINK_DIR ${ROBOTS_LINK_DIR} ${ARIS_LINK_DIR} ${XSENS_LINK_DIR} ${LAPACK_LINK_DIR})
-set(ALL_LINK_LIBS ${ROBOTS_LINK_LIBS} ${ARIS_LINK_LIBS} ${LAPACK_LINK_LIBS} ${XSENS_LINK_LIBS} ${SYSTEM_LINK_LIBS})
+set(ALL_INCL_DIR ${ROBOTS_INCL_DIR} ${ARIS_INCL_DIR} ${XSENS_INCL_DIR} ${ETHERLAB_INCL_DIR} ${XENOMAI_INCL_DIR} ${GENERAL_INCL_DIR})
+set(ALL_LINK_DIR ${ROBOTS_LINK_DIR} ${ARIS_LINK_DIR} ${XSENS_LINK_DIR} )
+set(ALL_LINK_LIB ${ROBOTS_LINK_LIB} ${ARIS_LINK_LIB} ${XSENS_LINK_LIB} ${SYSTEM_LINK_LIB})
 endif(WIN32)
 
-include_directories(${ALL_INCLUDE_DIR})
+include_directories(${ALL_INCL_DIR})
 link_directories(${ALL_LINK_DIR})
 
 ################################### build server ####################################
-set(SOURCE_FILES main.cpp interpolation.cpp move2.cpp continuous_walk_with_force.cpp force_guided_walk.cpp push_recovery.cpp)
+set(SOURCE_FILES main.cpp continuous_walk_with_force.cpp)
 PREPEND(FULL_SRC Server ${SOURCE_FILES})
 add_executable(Server ${FULL_SRC})
-target_link_libraries(Server ${ALL_LINK_LIBS})
+target_link_libraries(Server ${ALL_LINK_LIB})
 
 ################################### build client ####################################
-add_executable(Client Client/client.cpp)
-target_link_libraries(Client ${ALL_LINK_LIBS})
+add_executable(rbt Client/client.cpp)
+target_link_libraries(rbt ${ALL_LINK_LIB})
 
 ################################### install ####################################
 if(UNIX)
-	set(CMAKE_INSTALL_PREFIX "/usr/Robots/CMakeDemo/")
+        set(CMAKE_INSTALL_PREFIX "/usr/Robots/CMakeDemo/")
 endif(UNIX)
 if(WIN32)
-	set(CMAKE_INSTALL_PREFIX "C:/Robots/CMakeDemo/")
+        set(CMAKE_INSTALL_PREFIX "C:/Robots/CMakeDemo/")
 endif(WIN32)
 
-install(TARGETS Server Client RUNTIME DESTINATION bin)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+install(TARGETS Server rbt RUNTIME DESTINATION bin)

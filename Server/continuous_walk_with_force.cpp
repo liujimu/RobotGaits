@@ -1,12 +1,20 @@
 #include "continuous_walk_with_force.h"
 
+#ifdef WIN32
+#define rt_printf printf
+#include <windows.h>
+#undef CM_NONE
+#endif
+#ifdef UNIX
+#include "rtdk.h"
+#include "unistd.h"
+#endif
+
 /*将以下注释代码添加到xml文件*/
 /*
       <cwf default="cwf_param">
         <cwf_param type="group">
           <totalCount abbreviation="t" type="int" default="3000"/>
-          <walkDirection abbreviation="w" type="int" default="-3"/>
-          <upDirection abbreviation="u" type="int" default="2"/>
           <distance abbreviation="d" type="double" default="0.5"/>
           <height abbreviation="h" type="double" default="0.05"/>
         </cwf_param>
@@ -14,25 +22,15 @@
       <cwfs/>
 */
 
-std::atomic_bool isStoppingCWF;
-
-Aris::Core::MSG parseCWF(const std::string &cmd, const std::map<std::string, std::string> &params)
+auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
 {
-    Robots::WALK_PARAM  param;
+    Robots::WalkParam  param;
 
     for (auto &i : params)
     {
         if (i.first == "totalCount")
         {
             param.totalCount = std::stoi(i.second);
-        }
-        else if (i.first == "walkDirection")
-        {
-            param.walkDirection = std::stoi(i.second);
-        }
-        else if (i.first == "upDirection")
-        {
-            param.upDirection = std::stoi(i.second);
         }
         else if (i.first == "distance")
         {
@@ -44,96 +42,91 @@ Aris::Core::MSG parseCWF(const std::string &cmd, const std::map<std::string, std
         }
     }
 
-    isStoppingCWF=false;
+    state::getState().isStopping() = false;
 
-    Aris::Core::MSG msg;
-
-    msg.CopyStruct(param);
-
-    return msg;
+    msg.copyStruct(param);
 }
 
-Aris::Core::MSG parseCWFStop(const std::string &cmd, const std::map<std::string, std::string> &params)
+auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
 {
-    isStoppingCWF = true;
-
-    Aris::Core::MSG msg;
-
-    return msg;
+    state::getState().isStopping() = true;
 }
 
-int continuousWalkWithForce(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pParam)
+auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int
 {
-    const Robots::WALK_PARAM *pCWFP = static_cast<const Robots::WALK_PARAM *>(pParam);
+    auto &robot = static_cast<Robots::RobotBase &>(model);
+    auto &param = static_cast<const Robots::WalkParam &>(param_in);
 
-    static bool isWalking=false;
-    static int walkBeginCount{0};
-    //static double walkBeginPee[18]{0};
-    //static double walkBeginBodyPE[6]{0};
-    static double forceOffsetSum[3]{0};
+    static bool isWalking{ false };
+    static int walkBeginCount{ 0 };
+    static double forceOffsetSum[6]{ 0 };
 
-    double forceOffsetAvg[3]{0};
-    double realForceData[3]{0};
-    const double forceThreshold[3]{40,40,40};//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor=1;
+    double forceOffsetAvg[6]{ 0 };
+    double realForceData[6]{ 0 };
+    double forceInBody[6];
+    const double forceThreshold[6]{ 40, 40, 40, 40, 40, 40 };//力传感器的触发阈值,单位N或Nm
+    const double forceAMFactor{ 1 };//传感器数值与实际力大小的转化系数
+    const double sensorPE[6]{ 0, 0, 0, 0, -PI/2, -PI/2 };
 
     //力传感器手动清零
-    if (pCWFP->count<100)
+    if (param.count < 100)
     {
-        if(pCWFP->count==0)
+        if(param.count == 0)
         {
-            for(int i=0;i<3;i++)
-            {
-                forceOffsetSum[i]=0;
-            }
+            std::fill(forceOffsetSum, forceOffsetSum + 6, 0);
         }
-        forceOffsetSum[0]+=pCWFP->pForceData->at(0).Fx;
-        forceOffsetSum[1]+=pCWFP->pForceData->at(0).Fy;
-        forceOffsetSum[2]+=pCWFP->pForceData->at(0).Mz;
+        for(int i = 0; i < 6; i++)
+        {
+            forceOffsetSum[i] += param.force_data->at(0).fce[i];
+        }
     }
     else
     {
-        for(int i=0;i<3;i++)
+        for(int i = 0; i < 6; i++)
         {
-            forceOffsetAvg[i]=forceOffsetSum[i]/100;
+            forceOffsetAvg[i] = forceOffsetSum[i] / 100;
+            realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
+            //转换到机器人身体坐标系
+            double sensorPM[16]{ 0 };
+            Aris::Dynamic::s_pe2pm(sensorPE, sensorPM);
+            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData, forceInBody);
+            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData + 3, forceInBody + 3);
         }
-        if(pCWFP->count==100)
+        //用于显示力的初始值
+        if(param.count == 100)
         {
-            rt_printf("forceOffsetAvg: %f %f %f\n",forceOffsetAvg[0],forceOffsetAvg[1],forceOffsetAvg[2]);
+            rt_printf("forceOffsetAvg: %f %f %f\n",forceOffsetAvg[0],forceOffsetAvg[1],forceOffsetAvg[5]);
         }
-        realForceData[0]=(pCWFP->pForceData->at(0).Fx-forceOffsetAvg[0])/forceAMFactor;
-        realForceData[1]=(pCWFP->pForceData->at(0).Fy-forceOffsetAvg[1])/forceAMFactor;
-        realForceData[2]=(pCWFP->pForceData->at(0).Mz-forceOffsetAvg[2])/forceAMFactor;
 
-        static Robots::WALK_PARAM realParam = *pCWFP;
+        static Robots::WalkParam realParam = param;
 
         if(!isWalking)
         {
-            WALK_DIRECTION walkDir=forceJudge(realForceData, forceThreshold);
+            WALK_DIRECTION walkDir=forceJudge(forceInBody, forceThreshold);
             if(walkDir!=STOP)
             {
                 switch (walkDir)
                 {
                 case FORWARD:
-                    realParam.d=pCWFP->d;
+                    realParam.d=param.d;
                     realParam.alpha=0;
                     realParam.beta=0;
                     rt_printf("Walking Forward\n");
                     break;
                 case BACKWARD:
-                    realParam.d=-1*pCWFP->d;
+                    realParam.d=-1*param.d;
                     realParam.alpha=0;
                     realParam.beta=0;
                     rt_printf("Walking Backward\n");
                     break;
                 case LEFTWARD:
-                    realParam.d=pCWFP->d/2;
+                    realParam.d=param.d/2;
                     realParam.alpha=PI/2;
                     realParam.beta=0;
                     rt_printf("Walking Leftward\n");
                     break;
                 case RIGHTWARD:
-                    realParam.d=pCWFP->d/2;
+                    realParam.d=param.d/2;
                     realParam.alpha=-PI/2;
                     realParam.beta=0;
                     rt_printf("Walking Rightward\n");
@@ -166,19 +159,16 @@ int continuousWalkWithForce(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARA
                     break;
                 }
                 isWalking=true;
-                walkBeginCount=pCWFP->count;
-                pRobot->GetPee(realParam.beginPee);
-                pRobot->GetBodyPe(realParam.beginBodyPE);
+                walkBeginCount=param.count;
 
-                rt_printf("realForceData: %f %f %f\n",realForceData[0],realForceData[1],realForceData[2]);
-                rt_printf("beginBodyPE: %f %f %f\n",realParam.beginBodyPE[0],realParam.beginBodyPE[1],realParam.beginBodyPE[2]);
+                rt_printf("realForceData: %f %f %f\n",forceInBody[0],forceInBody[1],forceInBody[5]);
             }
         }
         else
         {
-            realParam.count=pCWFP->count-walkBeginCount;
-            int ret=Robots::walk(pRobot, &realParam);
-            if(ret==0)
+            realParam.count = param.count - walkBeginCount;
+            int ret = Robots::walkGait(robot, realParam);
+            if(ret == 0)
             {
                 rt_printf("Finish One Walking Step\n");
                 isWalking=false;
@@ -186,7 +176,7 @@ int continuousWalkWithForce(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARA
         }
     }
 
-    if(isStoppingCWF && (!isWalking))
+    if(state::getState().isStopping() && (!isWalking))
     {
         return 0;
     }
@@ -199,15 +189,15 @@ int continuousWalkWithForce(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARA
 WALK_DIRECTION forceJudge(const double *force, const double *threshold)
 {
     WALK_DIRECTION walkDir{STOP};
-    if(std::fabs(force[2]) > threshold[2])
+    if(std::fabs(force[5]) > threshold[5])
     {
-        if(force[2] < -2*threshold[2])
+        if(force[5] < -2*threshold[5])
             walkDir=FAST_TURNRIGHT;
-        else if(force[2] < -threshold[2])
+        else if(force[5] < -threshold[5])
             walkDir=TURNRIGHT;
-        else if(force[2] > 2*threshold[2])
+        else if(force[5] > 2*threshold[5])
             walkDir=FAST_TURNLEFT;
-        else if(force[2] > threshold[2])
+        else if(force[5] > threshold[5])
             walkDir=TURNLEFT;
     }
     else if(std::fabs(std::fabs(force[0]) - threshold[0]) > std::fabs(std::fabs(force[1]) - threshold[1]))
