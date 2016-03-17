@@ -31,11 +31,11 @@ int main(int argc, char *argv[])
     if (argc <= 1)
     {
         std::cout << "you did not type in robot name, in this case ROBOT-III will start" << std::endl;
-        xml_address = "/usr/Robots/resource/Robot_Type_I/Robot_III/Robot_III.xml";
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_Single_Motor.xml";
     }
     else if (std::string(argv[1]) == "III")
     {
-        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III.xml";
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_Single_Motor.xml";
     }
     else if (std::string(argv[1]) == "VIII")
     {
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
     //my gaits
     rs.addCmd("cwf", CWFParse, CWFGait);
-    rs.addCmd("cwf", CWFStopParse, CWFGait);
+    rs.addCmd("cwfs", CWFStopParse, CWFGait);
 
     rs.open();
 
