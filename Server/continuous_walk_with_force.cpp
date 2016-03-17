@@ -102,66 +102,67 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
 
         if(!isWalking)
         {
-            WALK_DIRECTION walkDir=forceJudge(forceInBody, forceThreshold);
-            if(walkDir!=STOP)
+            WALK_DIRECTION walkDir = forceJudge(forceInBody, forceThreshold);
+            if(walkDir != STOP)
             {
                 switch (walkDir)
                 {
                 case FORWARD:
-                    realParam.d=param.d;
-                    realParam.alpha=0;
-                    realParam.beta=0;
+                    realParam.d = param.d;
+                    realParam.alpha = 0;
+                    realParam.beta = 0;
                     rt_printf("Walking Forward\n");
                     break;
                 case BACKWARD:
-                    realParam.d=-1*param.d;
-                    realParam.alpha=0;
-                    realParam.beta=0;
+                    realParam.d = -1 * param.d;
+                    realParam.alpha = 0;
+                    realParam.beta = 0;
                     rt_printf("Walking Backward\n");
                     break;
                 case LEFTWARD:
-                    realParam.d=param.d/2;
-                    realParam.alpha=PI/2;
-                    realParam.beta=0;
+                    realParam.d = param.d/2;
+                    realParam.alpha = PI/2;
+                    realParam.beta = 0;
                     rt_printf("Walking Leftward\n");
                     break;
                 case RIGHTWARD:
-                    realParam.d=param.d/2;
-                    realParam.alpha=-PI/2;
-                    realParam.beta=0;
+                    realParam.d = param.d/2;
+                    realParam.alpha = -PI/2;
+                    realParam.beta = 0;
                     rt_printf("Walking Rightward\n");
                     break;
                 case TURNLEFT:
-                    realParam.d=0;
-                    realParam.alpha=0;
-                    realParam.beta=PI/12;
+                    realParam.d = 0;
+                    realParam.alpha = 0;
+                    realParam.beta = PI/12;
                     rt_printf("Turning Left\n");
                     break;
                 case TURNRIGHT:
-                    realParam.d=0;
-                    realParam.alpha=0;
-                    realParam.beta=-PI/12;
+                    realParam.d = 0;
+                    realParam.alpha = 0;
+                    realParam.beta = -PI/12;
                     rt_printf("Turning Right\n");
                     break;
                 case FAST_TURNLEFT:
-                    realParam.d=0;
-                    realParam.alpha=0;
-                    realParam.beta=PI/6;
+                    realParam.d = 0;
+                    realParam.alpha = 0;
+                    realParam.beta = PI/6;
                     rt_printf("Fast Turning Left\n");
                     break;
                 case FAST_TURNRIGHT:
-                    realParam.d=0;
-                    realParam.alpha=0;
-                    realParam.beta=-PI/6;
+                    realParam.d = 0;
+                    realParam.alpha = 0;
+                    realParam.beta = -PI/6;
                     rt_printf("Fast Turning Right\n");
                     break;
                 default:
                     break;
                 }
-                isWalking=true;
-                walkBeginCount=param.count;
+                isWalking = true;
+                walkBeginCount = param.count + 1;
 
                 rt_printf("realForceData: %f %f %f\n",forceInBody[0],forceInBody[1],forceInBody[5]);
+                rt_printf("walkBeginCount: %f\n",walkBeginCount);
             }
         }
         else
@@ -171,7 +172,7 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
             if(ret == 0)
             {
                 rt_printf("Finish One Walking Step\n");
-                isWalking=false;
+                isWalking = false;
             }
         }
     }
