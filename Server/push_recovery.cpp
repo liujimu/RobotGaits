@@ -110,6 +110,8 @@ auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanPara
             {
                 fAxis = maxIndex;
                 fSign = forceInBody[fAxis] / std::fabs(forceInBody[fAxis]);
+                //显示力的方向
+                rt_printf("PushDirection: %c%c\n", 44 - fSign, fAxis + 'x');
 
                 isWalking=true;
                 //初始化
