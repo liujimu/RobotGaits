@@ -62,9 +62,10 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
     static double forceOffsetSum[6]{ 0 };
 
     double forceOffsetAvg[6]{ 0 };
+    double realForceData[6]{ 0 };
     double forceInBody[6];
     const double forceThreshold[6]{ 40, 40, 40, 40, 40, 40 };//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{ 1 };//传感器数值与实际力大小的转化系数
+    const double forceAMFactor{ 1000 };//传感器数值与实际力大小的转化系数
     const double sensorPE[6]{ 0, 0, 0, 0, -PI/2, -PI/2 };
 
     //力传感器手动清零
@@ -83,7 +84,6 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
     {
         for(int i = 0; i < 6; i++)
         {
-            double realForceData[6]{ 0 };
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
             realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
             //转换到机器人身体坐标系
@@ -96,6 +96,10 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
         if(param.count == 100)
         {
             rt_printf("forceOffsetAvg: %f %f %f\n",forceOffsetAvg[0],forceOffsetAvg[1],forceOffsetAvg[5]);
+        }
+        if(param.count % 1000 == 0)
+        {
+            rt_printf("forceInBody: %f %f %f %f %f %f\n",forceInBody[0],forceInBody[1],forceInBody[2],forceInBody[3],forceInBody[4],forceInBody[5]);
         }
 
         static Robots::WalkParam realParam = param;
@@ -161,7 +165,7 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
                 isWalking = true;
                 walkBeginCount = param.count + 1;
 
-                rt_printf("realForceData: %f %f %f\n",forceInBody[0],forceInBody[1],forceInBody[5]);
+                rt_printf("forceInBody: %f %f %f\n",forceInBody[0],forceInBody[1],forceInBody[5]);
                 rt_printf("walkBeginCount: %f\n",walkBeginCount);
             }
         }
