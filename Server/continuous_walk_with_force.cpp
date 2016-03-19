@@ -24,7 +24,7 @@
 
 auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
 {
-    Robots::WalkParam  param;
+    Robots::WalkParam param;
 
     for (auto &i : params)
     {
@@ -42,14 +42,14 @@ auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &
         }
     }
 
-    state::getState().isStopping() = false;
+    CwfState::getState().isStopping() = false;
 
     msg.copyStruct(param);
 }
 
 auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
 {
-    state::getState().isStopping() = true;
+    CwfState::getState().isStopping() = true;
 }
 
 auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int
@@ -62,7 +62,6 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
     static double forceOffsetSum[6]{ 0 };
 
     double forceOffsetAvg[6]{ 0 };
-    double realForceData[6]{ 0 };
     double forceInBody[6];
     const double forceThreshold[6]{ 40, 40, 40, 40, 40, 40 };//力传感器的触发阈值,单位N或Nm
     const double forceAMFactor{ 1 };//传感器数值与实际力大小的转化系数
@@ -84,6 +83,7 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
     {
         for(int i = 0; i < 6; i++)
         {
+            double realForceData[6]{ 0 };
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
             realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
             //转换到机器人身体坐标系
@@ -177,7 +177,7 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
         }
     }
 
-    if(state::getState().isStopping() && (!isWalking))
+    if(CwfState::getState().isStopping() && (!isWalking))
     {
         return 0;
     }

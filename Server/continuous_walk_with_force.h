@@ -1,9 +1,6 @@
 #ifndef CONTINUOUS_WALK_WITH_FORCE_H
 #define CONTINUOUS_WALK_WITH_FORCE_H
 
-#endif // CONTINUOUS_WALK_WITH_FORCE_H
-
-
 #include <iostream>
 #include <cstring>
 #include <iomanip>
@@ -22,18 +19,18 @@
 #define PI 3.141592653589793
 #endif
 
-class state
+class CwfState
 {
 public:
-    static state& getState()
+    static CwfState& getState()
     {
-        static state s;
+        static CwfState s;
         return s;
     }
     bool& isStopping() { return isStopping_; }
 private:
     bool isStopping_{ true };
-    state() = default;
+    CwfState() = default;
 };
 
 enum WALK_DIRECTION
@@ -56,3 +53,5 @@ auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::strin
 /*operation function*/
 auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int;
 WALK_DIRECTION forceJudge(const double *force, const double *threshold);
+
+#endif // CONTINUOUS_WALK_WITH_FORCE_H

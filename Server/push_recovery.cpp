@@ -1,262 +1,236 @@
 #include "push_recovery.h"
 
-Aris::Control::PIPE<PR_PIPE_PARAM> pushRecoveryPipe(12,true);
+#ifdef WIN32
+#define rt_printf printf
+#include <windows.h>
+#undef CM_NONE
+#endif
+#ifdef UNIX
+#include "rtdk.h"
+#include "unistd.h"
+#endif
 
-std::atomic_bool g_isStoppingPR;
+/*将以下注释代码添加到xml文件*/
+/*
+      <pr default="pr_param">
+        <pr_param type="group">
+          <pushCount abbreviation="p" type="int" default="1000"/>
+          <recoverCount abbreviation="r" type="int" default="4000"/>
+          <totalCount abbreviation="t" type="int" default="5000"/>
+          <firstStepCount abbreviation="f" type="int" default="2000"/>
+          <distance abbreviation="d" type="double" default="0.3"/>
+          <height abbreviation="h" type="double" default="0.05"/>
+          <angle abbreviation="a" type="double" default="5"/>
+          <descend abbreviation="c" type="double" default="0.025"/>
+        </pr_param>
+      </pr>
+      <prs/>
+*/
 
-int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pParam)
+auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int
 {
-    const PR_PARAM *pPRP = static_cast<const PR_PARAM *>(pParam);
+    auto &robot = static_cast<Robots::RobotBase &>(model);
+    auto &param = static_cast<const prParam &>(param_in);
 
-    static bool isWalking{false};
-    static int s_beginCount{0};
-    static double forceOffsetSum[3]{0};
-    static double s_beginPm[16];
-    static double s_beginPee[18];
-    static double s_bodyPE[6];
-    static double s_bodyVel[6];
-    static double s_recoverBodyPE[6];//插值起点
-    static double s_recoverBodyVel[6];//插值起点
-    static int s_fAxis;
-    static int s_fSign;
+    static Aris::Dynamic::FloatMarker beginMak{ robot.ground() };
+    static double beginPee[18];
+    static double bodyPe[6];
+    static double bodyVel[6];
+    static double recoverBodyPe[6];//插值起点
+    static double recoverBodyVel[6];//插值起点
 
-    const double clockPeriod{0.001};
-    const double forceThreshold[3]{100, 100, 100};//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{1};//力传感器输出数值与实际作用力的比值，1或1000
-    double forceOffsetAvg[3]{0};
-    double realForce[3]{0};
-    const int s2b[3]{2, 0, 1};//将力传感器的坐标系映射到机器人身体坐标系
+    static bool isWalking{ false };
+    static int beginCount{ 0 };
+    const double clockPeriod{ 0.001 };
 
-    double M{1};
-    double C[6]{1.5, 1.5, 1.5, 1.5, 1.5, 1.5};
-    double K[6]{0, 1.14, 0, 1.14, 0, 0};
-    double Fh = 1.5 * pPRP->d;
-    double Fv = 2.5 * pPRP->descend;
-    double Fr = 0.0427 * pPRP->angle;
+    static int fAxis;
+    static int fSign;
+    static double forceOffsetSum[6]{ 0 };
+    double forceOffsetAvg[6]{ 0 };
+    double forceInBody[6]{ 0 };
+    const double forceThreshold[6]{ 100, 100, 100, 100, 100, 100 };//力传感器的触发阈值,单位N或Nm
+    const double forceAMFactor{ 1 };//力传感器输出数值与实际作用力的比值，1或1000
+    const double sensorPe[6]{ 0, 0, 0, 0, -PI/2, -PI/2 };
+
+    double M{ 1 };
+    double C[6]{ 1.5, 1.5, 1.5, 1.5, 1.5, 1.5 };
+    double K[6]{ 0, 1.14, 0, 1.14, 0, 0 };
+    double Fh = 1.5 * param.d;
+    double Fv = 2.5 * param.descend;
+    double Fr = 0.0427 * param.angle;
 
     //力传感器手动清零
-    if (pPRP->count < 100)
+    if (param.count < 100)
     {
-        if(pPRP->count == 0)
+        if(param.count == 0)
         {
-            for(int i = 0; i < 3; i++)
-            {
-                forceOffsetSum[i] = 0;
-            }
+            std::fill(forceOffsetSum, forceOffsetSum + 6, 0);
         }
-        forceOffsetSum[0] += pPRP->pForceData->at(0).Fx;
-        forceOffsetSum[1] += pPRP->pForceData->at(0).Fy;
-        forceOffsetSum[2] += pPRP->pForceData->at(0).Fz;
+        for(int i = 0; i < 6; i++)
+        {
+            forceOffsetSum[i] += param.force_data->at(0).fce[i];
+        }
     }
-
     else
     {
-        for(int i = 0; i < 3; i++)
+        for(int i = 0; i < 6; i++)
         {
+            double realForceData[6]{ 0 };
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
+            realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
+            //转换到机器人身体坐标系
+            double sensorPm[16]{ 0 };
+            Aris::Dynamic::s_pe2pm(sensorPe, sensorPm);
+            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData, forceInBody);
+            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData + 3, forceInBody + 3);
         }
-        if(pPRP->count == 100)
-        {
-            rt_printf("forceOffsetAvg: %f %f %f\n",forceOffsetAvg[0],forceOffsetAvg[1],forceOffsetAvg[2]);
-        }
-        realForce[0] = (pPRP->pForceData->at(0).Fx - forceOffsetAvg[0]) / forceAMFactor;
-        realForce[1] = (pPRP->pForceData->at(0).Fy - forceOffsetAvg[1]) / forceAMFactor;
-        realForce[2] = (pPRP->pForceData->at(0).Fz - forceOffsetAvg[2]) / forceAMFactor;
 
         /*检测力的方向，确定运动参数*/
         if(!isWalking)
         {
-            int forceIndex{-1};
-            double forceMax{0};
+            int maxIndex{ -1 };
+            double maxForce{ 0 };
             for(int i = 0; i < 3; i++)
             {
-                double forceTmp = std::fabs(realForce[i]) - forceThreshold[i];
-                if(forceTmp > forceMax)
+                double tmpForce = std::fabs(forceInBody[i]) - forceThreshold[i];
+                if(tmpForce > maxForce)
                 {
-                    forceIndex = i;
-                    forceMax = forceTmp;
+                    maxIndex = i;
+                    maxForce = tmpForce;
                 }
             }
 
-            if(forceIndex >= 0)
+            if(maxIndex >= 0)
             {
-                s_fAxis = s2b[forceIndex];
-                s_fSign = realForce[forceIndex] / std::fabs(realForce[forceIndex]);
-
-                pRobot->GetPee(s_beginPee, "B");
-                pRobot->GetBodyPm(s_beginPm);
-                std::memset(s_bodyPE, 0 ,sizeof(s_bodyPE));
-                std::memset(s_bodyVel, 0, sizeof(s_bodyVel));
+                fAxis = maxIndex;
+                fSign = forceInBody[fAxis] / std::fabs(forceInBody[fAxis]);
 
                 isWalking=true;
-                s_beginCount = pPRP->count + 1;
-
-                //For testing
-                double beginBodyPE[6];
-                pRobot->GetBodyPe(beginBodyPE);
-                rt_printf("beginBodyPE: %f %f %f %f %f %f\n"
-                          ,beginBodyPE[0],beginBodyPE[1],beginBodyPE[2],beginBodyPE[3],beginBodyPE[4],beginBodyPE[5]);
-                rt_printf("s_beginPee: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-                          , s_beginPee[0], s_beginPee[1], s_beginPee[2], s_beginPee[3], s_beginPee[4], s_beginPee[5]
-                          , s_beginPee[6], s_beginPee[7], s_beginPee[8], s_beginPee[9], s_beginPee[10], s_beginPee[11]
-                          , s_beginPee[12], s_beginPee[13], s_beginPee[14], s_beginPee[15], s_beginPee[16], s_beginPee[17]);
-                rt_printf("realForceData: %f %f %f\n",realForce[0],realForce[1],realForce[2]);
-                rt_printf("PushDirection: %c%c\n", 44 - s_fSign, s2b[forceIndex] + 'x');
+                //初始化
+                beginCount = param.count + 1;
+                beginMak.setPrtPm(*robot.body().pm());
+                beginMak.update();
+                robot.GetPee(beginPee, beginMak);
+                std::fill(bodyPe, bodyPe + 6, 0);
+                std::fill(bodyVel, bodyVel + 6, 0);
             }
         }
 
         /*运动规划*/
         else
-        {
-            double pEE[18];
-            double pBodyPE[6];
-            double d = s_fSign * pPRP->d;
-            double h = pPRP->h;
-            int count = pPRP->count - s_beginCount;
-            int totalCount = pPRP->totalCount;
+        {            
+            double Peb[6], Pee[18];
+            std::fill(Peb, Peb + 6, 0);
+            std::copy(beginPee, beginPee + 18, Pee);
+
+            double d = fSign * param.d;
+            double h = param.h;
+            int count = param.count - beginCount;
+            int totalCount = param.totalCount;
             double F[6]{0};
 
+
             /*设置身体*/
-            if(count < pPRP->pushCount)
+            if(count < param.pushCount)
             {
-                if(s_fAxis == 1)
+                if(fAxis == 1)
                 {
-                    F[s_fAxis] = 2.5 * s_fSign * Fv;
+                    F[fAxis] = 2.5 * fSign * Fv;
                 }
                 else
                 {
-                    F[s_fAxis] = s_fSign * Fh;
+                    F[fAxis] = fSign * Fh;
                     F[1] = -1 * Fv;
-                    F[3] = (1 - s_fAxis) * s_fSign * Fr;
+                    F[3] = (1 - fAxis) * fSign * Fr;
                 }
             }
             //用阻抗模型计算身体位姿变化
-            double bodyAcc[6]{0};
-            if(count < pPRP->recoverCount)
+            double bodyAcc[6]{ 0 };
+            if(count < param.recoverCount)
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    bodyAcc[i] = (F[i] - C[i] * s_bodyVel[i] - K[i] * s_bodyPE[i]) / M;
-                    s_bodyVel[i] += bodyAcc[i] * clockPeriod;
-                    s_bodyPE[i] += s_bodyVel[i] * clockPeriod;
-
+                    bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyPe[i]) / M;
+                    bodyVel[i] += bodyAcc[i] * clockPeriod;
+                    bodyPe[i] += bodyVel[i] * clockPeriod;
+                    std::copy(bodyPe, bodyPe + 6, Peb);
                 }
-                if(count == (pPRP->recoverCount - 1))
+                if(count == (param.recoverCount - 1))
                 {
-                    std::copy_n(s_bodyPE, 6, s_recoverBodyPE);
-                    std::copy_n(s_bodyVel, 6, s_recoverBodyVel);
+                    std::copy_n(bodyPe, 6, recoverBodyPe);
+                    std::copy_n(bodyVel, 6, recoverBodyVel);
                 }
             }
             //超过recoverCount后，用两点Hermite插值调整身体至目标位姿
             else if(count < totalCount)
             {
                 double finalBodyPE[6]{0};
-                if(s_fAxis != 1)
+                if(fAxis != 1)
                 {
-                    finalBodyPE[s_fAxis] = d;
+                    finalBodyPE[fAxis] = d;
                 }
                 for (int i = 0; i < 4; i++)
                 {
-                    s_bodyPE[i]=Hermite3(count * clockPeriod, (pPRP->recoverCount - 1) * clockPeriod, (pPRP->totalCount - 1) * clockPeriod,
-                                         s_recoverBodyPE[i], finalBodyPE[i], s_recoverBodyVel[i], 0);
-                    //for testing
-//                    rt_printf("count: %d\n", count);
-//                    rt_printf("s_BodyPE:\n %f %f %f %f %f %f\n\n"
-//                              , s_bodyPE[0], s_bodyPE[1], s_bodyPE[2], s_bodyPE[3], s_bodyPE[4], s_bodyPE[5]);
+                    Peb[i] = Hermite3(count * clockPeriod, (param.recoverCount - 1) * clockPeriod, (param.totalCount - 1) * clockPeriod,
+                                         recoverBodyPe[i], finalBodyPE[i], recoverBodyVel[i], 0);
                 }
             }
-            //转换到地面坐标系
-            char order[4] = "313";
-            if(s_fAxis == 2)
-            {
-                std::strcpy(order, "123");
-            }
-            double relativePm[16], absolutePm[16];
-            Aris::DynKer::s_pe2pm(s_bodyPE, relativePm, order);
-            Aris::DynKer::s_pm_dot_pm(s_beginPm, relativePm, absolutePm);
-            Aris::DynKer::s_pm2pe(absolutePm, pBodyPE);
 
-            std::copy_n(s_beginPee, 18, pEE);
-            if(s_fAxis != 1)
+            //规划腿
+            if(fAxis != 1)
             {
-                if(count < pPRP->firstStepCount)
+                if(count < param.firstStepCount)
                 {
-                    double s = -(PI / 2) * cos(PI * (count + 1) / pPRP->firstStepCount) + PI / 2;
+                    double s = -(PI / 2) * cos(PI * (count + 1) / param.firstStepCount) + PI / 2;
                     /*设置移动腿*/
                     for (int i = 0; i < 18; i += 6)
                     {
-                        pEE[i + 1] = h*sin(s) + s_beginPee[i + 1];
-                        pEE[i + s_fAxis] = d / 2 * (1 - cos(s)) + s_beginPee[i + s_fAxis];
+                        Pee[i + 1] = h*sin(s) + beginPee[i + 1];
+                        Pee[i + fAxis] = d / 2 * (1 - cos(s)) + beginPee[i + fAxis];
                     }
                     /*设置支撑腿*/
                     for (int i = 3; i < 18; i += 6)
                     {
-                        pEE[i + 1] = s_beginPee[i + 1];
-                        pEE[i + s_fAxis] = s_beginPee[i + s_fAxis];
+                        Pee[i + 1] = beginPee[i + 1];
+                        Pee[i + fAxis] = beginPee[i + fAxis];
                     }
                 }
                 else if(count < totalCount)
                 {
-                    double s = -(PI / 2) * cos(PI * (count + 1 - pPRP->firstStepCount) / (totalCount - pPRP->firstStepCount)) + PI / 2;
+                    double s = -(PI / 2) * cos(PI * (count + 1 - param.firstStepCount) / (totalCount - param.firstStepCount)) + PI / 2;
                     /*设置移动腿*/
                     for (int i = 3; i < 18; i += 6)
                     {
-                        pEE[i + 1] = h*sin(s) + s_beginPee[i + 1];
-                        pEE[i + s_fAxis] = d / 2 * (1 - cos(s)) + s_beginPee[i + s_fAxis];
+                        Pee[i + 1] = h*sin(s) + beginPee[i + 1];
+                        Pee[i + fAxis] = d / 2 * (1 - cos(s)) + beginPee[i + fAxis];
                     }
                     /*设置支撑腿*/
                     for (int i = 0; i < 18; i += 6)
                     {
-                        pEE[i + 1] = s_beginPee[i + 1];
-                        pEE[i + s_fAxis] = s_beginPee[i + s_fAxis] + d;
+                        Pee[i + 1] = beginPee[i + 1];
+                        Pee[i + fAxis] = beginPee[i + fAxis] + d;
                     }
                 }
             }
 
-            //将足尖坐标转换到地面坐标系
-            double pEE2G[18];
-            for (int i = 0; i < 18; i += 3)
+            char order[4] = "313";
+            if(fAxis == 2)
             {
-                Aris::DynKer::s_pm_dot_pnt(s_beginPm, pEE + i, pEE2G + i);
+                std::strcpy(order, "123");
             }
-
-            /*计算完毕，更新pRobot*/
-            pRobot->SetPee(pEE2G, pBodyPE, "G");
-
-            //For testing
-//            if(count % 1000 == 0)
-//            {
-//                rt_printf("count: %d\n", count);
-//                rt_printf("pEE:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-//                          , pEE[0], pEE[1], pEE[2], pEE[3], pEE[4], pEE[5], pEE[6], pEE[7], pEE[8]
-//                          , pEE[9], pEE[10], pEE[11], pEE[12], pEE[13], pEE[14], pEE[15], pEE[16], pEE[17]);
-//                rt_printf("s_BodyPE:\n %f %f %f %f %f %f\n\n"
-//                          , s_bodyPE[0], s_bodyPE[1], s_bodyPE[2], s_bodyPE[3], s_bodyPE[4], s_bodyPE[5]);
-//                rt_printf("pEE2G:\n %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n"
-//                          , pEE2G[0], pEE2G[1], pEE2G[2], pEE2G[3], pEE2G[4], pEE2G[5], pEE2G[6], pEE2G[7], pEE2G[8]
-//                          , pEE2G[9], pEE2G[10], pEE2G[11], pEE2G[12], pEE2G[13], pEE2G[14], pEE2G[15], pEE2G[16], pEE2G[17]);
-//                rt_printf("pBodyPE:\n %f %f %f %f %f %f\n\n"
-//                          , pBodyPE[0], pBodyPE[1], pBodyPE[2], pBodyPE[3], pBodyPE[4], pBodyPE[5]);
-//            }
-
-            //PIPE
-            PR_PIPE_PARAM prPipe;
-            prPipe.count=count;
-            pRobot->GetPin(prPipe.pIn);
-            pRobot->GetPee(prPipe.pEE, "B");
-            pRobot->GetBodyPe(prPipe.bodyPE);
-            pushRecoveryPipe.SendToNRT(prPipe);
+            robot.SetPeb(Peb, beginMak, order);
+            robot.SetPee(Pee, beginMak);
 
             //判断动作结束
             if(count == (totalCount - 1))
             {
                 isWalking = false;
-                s_fSign = 0;
+                fSign = 0;
             }
         }
     }
 
-    if(g_isStoppingPR && (!isWalking))
+    if(PrState::getState().isStopping() && (!isWalking))
     {
         return 0;
     }
@@ -266,9 +240,9 @@ int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pP
     }
 }
 
-Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::string, std::string> &params)
+auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
 {
-    PR_PARAM  param;
+    prParam param;
 
     for (auto &i : params)
     {
@@ -306,19 +280,13 @@ Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::st
         }
     }
 
-    g_isStoppingPR = false;
+    PrState::getState().isStopping() = false;
 
-    Aris::Core::MSG msg;
-    msg.CopyStruct(param);
-    return msg;
+    msg.copyStruct(param);
 }
 
-
-Aris::Core::MSG parsePushRecoveryStop(const std::string &cmd, const std::map<std::string, std::string> &params)
+auto pushRecoveryStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
 {
-    g_isStoppingPR = true;
-
-    Aris::Core::MSG msg;
-    return msg;
+    PrState::getState().isStopping() = true;
 }
 

@@ -21,6 +21,7 @@ using namespace std;
 #endif
 
 #include "continuous_walk_with_force.h"
+#include "push_recovery.h"
 
 using namespace Aris::Core;
 
@@ -59,6 +60,8 @@ int main(int argc, char *argv[])
     //my gaits
     rs.addCmd("cwf", CWFParse, CWFGait);
     rs.addCmd("cwfs", CWFStopParse, CWFGait);
+    rs.addCmd("pr", pushRecoveryParse, pushRecoveryGait);
+    rs.addCmd("prs", pushRecoveryStopParse, pushRecoveryGait);
 
     rs.open();
 

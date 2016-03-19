@@ -109,7 +109,7 @@ include_directories(${ALL_INCL_DIR})
 link_directories(${ALL_LINK_DIR})
 
 ################################### build server ####################################
-set(SOURCE_FILES main.cpp continuous_walk_with_force.cpp)
+set(SOURCE_FILES main.cpp continuous_walk_with_force.cpp push_recovery.cpp interpolation.cpp)
 PREPEND(FULL_SRC Server ${SOURCE_FILES})
 add_executable(Server ${FULL_SRC})
 target_link_libraries(Server ${ALL_LINK_LIB})

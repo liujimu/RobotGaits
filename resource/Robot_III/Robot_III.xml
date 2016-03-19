@@ -526,6 +526,19 @@
                 </cwf_param>
             </cwf>
             <cwfs/>
+            <pr default="pr_param">
+              <pr_param type="group">
+                <pushCount abbreviation="p" type="int" default="1000"/>
+                <recoverCount abbreviation="r" type="int" default="4000"/>
+                <totalCount abbreviation="t" type="int" default="5000"/>
+                <firstStepCount abbreviation="f" type="int" default="2000"/>
+                <distance abbreviation="d" type="double" default="0.3"/>
+                <height abbreviation="h" type="double" default="0.05"/>
+                <angle abbreviation="a" type="double" default="5"/>
+                <descend abbreviation="c" type="double" default="0.025"/>
+              </pr_param>
+            </pr>
+            <prs/>
         </Commands>
         <Connection IP="127.0.0.1" Port="5866"/>
         <Sensors>

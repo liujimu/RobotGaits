@@ -1,8 +1,6 @@
 #ifndef PUSH_RECOVERY_H
 #define PUSH_RECOVERY_H
 
-#endif // PUSH_RECOVERY_H
-
 #include <iostream>
 #include <cstring>
 #include <iomanip>
@@ -13,16 +11,9 @@
 #include <stdlib.h>
 #include <atomic>
 
-#include <Aris_Pipe.h>
-
-#include <Aris_Core.h>
-#include <Aris_Message.h>
-#include <Aris_Control.h>
-#include <Aris_DynKer.h>
-#include <Robot_Server.h>
+#include <aris.h>
 #include <Robot_Gait.h>
 #include <Robot_Base.h>
-#include <Robot_Type_I.h>
 
 #include "interpolation.h"
 
@@ -30,20 +21,22 @@
 #define PI 3.141592653589793
 #endif
 
-/*pipe parameters*/
-struct PR_PIPE_PARAM
+class PrState
 {
-    int count;
-    double pIn[18]{ 0 };
-    double pEE[18]{ 0 };
-    double bodyPE[6]{ 0 };
+public:
+    static PrState& getState()
+    {
+        static PrState s;
+        return s;
+    }
+    bool& isStopping() { return isStopping_; }
+private:
+    bool isStopping_{ true };
+    PrState() = default;
 };
 
-extern Aris::Control::PIPE<PR_PIPE_PARAM> pushRecoveryPipe;
-static std::thread pushRecoveryThread;
-
 /*gait parameters*/
-struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
+struct prParam final:public Aris::Server::GaitParamBase
 {
     std::int32_t pushCount{1000};
     std::int32_t recoverCount{4000};
@@ -55,9 +48,11 @@ struct PR_PARAM final:public Robots::GAIT_PARAM_BASE
     double descend{0.025};//身体下降高度
 };
 
-/*operation function*/
-int PushRecovery(Robots::ROBOT_BASE * pRobot, const Robots::GAIT_PARAM_BASE * pParam);
-
 /*parse function*/
-Aris::Core::MSG parsePushRecovery(const std::string &cmd, const std::map<std::string, std::string> &params);
-Aris::Core::MSG parsePushRecoveryStop(const std::string &cmd, const std::map<std::string, std::string> &params);
+auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
+auto pushRecoveryStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
+
+/*operation function*/
+auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int;
+
+#endif // PUSH_RECOVERY_H
