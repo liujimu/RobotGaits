@@ -109,6 +109,7 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
             WALK_DIRECTION walkDir = forceJudge(forceInBody, forceThreshold);
             if(walkDir != STOP)
             {
+                realParam.n = 1;
                 switch (walkDir)
                 {
                 case FORWARD:
@@ -193,31 +194,31 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
 
 WALK_DIRECTION forceJudge(const double *force, const double *threshold)
 {
-    WALK_DIRECTION walkDir{STOP};
-    if(std::fabs(force[5]) > threshold[5])
+    WALK_DIRECTION walkDir{ STOP };
+    if(std::fabs(force[4]) > threshold[4])
     {
-        if(force[5] < -2*threshold[5])
-            walkDir=FAST_TURNRIGHT;
-        else if(force[5] < -threshold[5])
-            walkDir=TURNRIGHT;
-        else if(force[5] > 2*threshold[5])
-            walkDir=FAST_TURNLEFT;
-        else if(force[5] > threshold[5])
-            walkDir=TURNLEFT;
+        if(force[4] < -2*threshold[4])
+            walkDir = FAST_TURNRIGHT;
+        else if(force[4] < -threshold[4])
+            walkDir = TURNRIGHT;
+        else if(force[4] > 2*threshold[4])
+            walkDir = FAST_TURNLEFT;
+        else if(force[4] > threshold[4])
+            walkDir = TURNLEFT;
     }
     else if(std::fabs(std::fabs(force[0]) - threshold[0]) > std::fabs(std::fabs(force[1]) - threshold[1]))
     {
         if(force[0] < -threshold[0])
-            walkDir=FORWARD;
+            walkDir = LEFTWARD;
         else if(force[0] > threshold[0])
-            walkDir=BACKWARD;
+            walkDir = RIGHTWARD;
     }
     else
     {
-        if(force[1] < -threshold[1])
-            walkDir=LEFTWARD;
-        else if(force[1] > threshold[1])
-            walkDir=RIGHTWARD;
+        if(force[2] < -threshold[2])
+            walkDir = FORWARD;
+        else if(force[2] > threshold[2])
+            walkDir = BACKWARD;
     }
     return walkDir;
 }
