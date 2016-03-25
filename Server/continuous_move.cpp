@@ -139,7 +139,7 @@ void parseContinuousMoveJudge(const std::string &cmd, const map<std::string, std
 int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)
 {
     auto &robot = static_cast<Robots::RobotBase &>(model);
-    auto &param = static_cast<const ContinueMoveParam &>(param_in);
+    auto &param = static_cast<const ContinuousMoveParam &>(param_in);
 
     double bodyVel[6];
     double bodyAcc[6];
@@ -155,9 +155,10 @@ int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBa
     double M[6]{1,1,1,1,1,1};
     double deltaT{0.001};
     double forceRange[6]{30,30,30,20,20,20};
-    double forceRatio{1000};//1 on RobotIII, 1000 on RobotVIII & single motor
+    double forceRatio{1};//1 on RobotIII, 1000 on RobotVIII & single motor
+    double forceInBody[6];
 
-    static ForceTask::CM_RecordParam CMRP;
+    static CM_RecordParam CMRP;
 
     if(isContinue==true)
     {
@@ -206,42 +207,42 @@ int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBa
                 CMRP.force[4]=(param.force_data->at(0).My-CMRP.forceAvg[4])/forceRatio;
                 CMRP.force[5]=(param.force_data->at(0).Mz-CMRP.forceAvg[5])/forceRatio;
 
-                int force2robot[6]={2,0,1,5,4,3};
+                Aris::Dynamic::s_f2f(*robot.forceSensorMak().prtPm(), CMRP.force, forceInBody);
                 int num1;
                 int num2;
                 double fmax{0};
                 double mmax{0};
                 for (int i=0;i<3;i++)
                 {
-                    if (fabs(CMRP.force[i])>fabs(fmax))
+                    if (fabs(forceInBody[i])>fabs(fmax))
                     {
-                        fmax=CMRP.force[i];
+                        fmax=forceInBody[i];
                         num1=i;
                     }
-                    if (fabs(CMRP.force[i+3])>fabs(mmax))
+                    if (fabs(forceInBody[i+3])>fabs(mmax))
                     {
-                        mmax=CMRP.force[i+3];
+                        mmax=forceInBody[i+3];
                         num2=i+3;
                     }
                 }
 
-                if(CMRP.force[num2]>forceRange[num2])
+                if(forceInBody[num2]>forceRange[num2])
                 {
-                    Fbody[force2robot[num2]]=1;
+                    Fbody[num2]=1;
                 }
-                else if(CMRP.force[num2]<-forceRange[num2])
+                else if(forceInBody[num2]<-forceRange[num2])
                 {
-                    Fbody[force2robot[num2]]=-1;
+                    Fbody[num2]=-1;
                 }
                 else
                 {
-                    if(CMRP.force[num1]>forceRange[num1])
+                    if(forceInBody[num1]>forceRange[num1])
                     {
-                        Fbody[force2robot[num1]]=1;
+                        Fbody[num1]=1;
                     }
-                    else if(CMRP.force[num1]<-forceRange[num1])
+                    else if(forceInBody[num1]<-forceRange[num1])
                     {
-                        Fbody[force2robot[num1]]=-1;
+                        Fbody[num1]=-1;
                     }
                 }
             }
@@ -257,7 +258,14 @@ int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBa
         robot.GetPmb(*bodyPm);
         robot.GetPee(nowPee);
         double pBody[6];
-        Aris::Dynamic::s_pe2pm(deltaPE,*deltaPm,"213");
+        if(isForce==false)
+        {
+            Aris::Dynamic::s_pe2pm(deltaPE,*deltaPm,"213");
+        }
+        else
+        {
+            Aris::Dynamic::s_pe2pm(deltaPE,*deltaPm,"123");
+        }
         Aris::Dynamic::s_pm_dot_pm(*bodyPm,*deltaPm,*realPm);
         Aris::Dynamic::s_pm2pe(*realPm,realPE,"313");
 
