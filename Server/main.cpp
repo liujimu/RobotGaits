@@ -22,6 +22,7 @@ using namespace std;
 
 #include "continuous_walk_with_force.h"
 #include "push_recovery.h"
+#include "continuous_move.h"
 
 using namespace Aris::Core;
 
@@ -36,11 +37,11 @@ int main(int argc, char *argv[])
     }
     else if (std::string(argv[1]) == "III")
     {
-        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_Single_Motor.xml";
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III.xml";
     }
     else if (std::string(argv[1]) == "VIII")
     {
-        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_VIII/Robot_VIII.xml";
+        xml_address = "/usr/Robots/resource/Robot_Type_I/Robot_VIII/Robot_VIII.xml";
     }
     else
     {
@@ -49,6 +50,8 @@ int main(int argc, char *argv[])
 
     auto &rs = Aris::Server::ControlServer::instance();
 
+
+
     rs.createModel<Robots::RobotTypeI>();
     rs.loadXml(xml_address.c_str());
     rs.addCmd("en", Robots::basicParse, nullptr);
@@ -56,12 +59,15 @@ int main(int argc, char *argv[])
     rs.addCmd("hm", Robots::basicParse, nullptr);
     rs.addCmd("rc", Robots::recoverParse, Robots::recoverGait);
     rs.addCmd("wk", Robots::walkParse, Robots::walkGait);
+    rs.addCmd("ro", Robots::resetOriginParse, Robots::resetOriginGait);
 
     //my gaits
     rs.addCmd("cwf", CWFParse, CWFGait);
     rs.addCmd("cwfs", CWFStopParse, CWFGait);
     rs.addCmd("pr", pushRecoveryParse, pushRecoveryGait);
     rs.addCmd("prs", pushRecoveryStopParse, pushRecoveryGait);
+    rs.addCmd("cmb", parseContinuousMoveBegin, continuousMove);
+    rs.addCmd("cmj", parseContinuousMoveJudge, continuousMove);
 
     rs.open();
 
@@ -76,6 +82,8 @@ int main(int argc, char *argv[])
         Aris::Core::stopMsgLoop();
     });
     Aris::Core::runMsgLoop();
+
+
 
     return 0;
 }

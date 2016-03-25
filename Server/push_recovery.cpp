@@ -50,8 +50,8 @@ auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanPara
     double realForceData[6]{ 0 };
     double forceInBody[6]{ 0 };
     const double forceThreshold[6]{ 40, 40, 40, 100, 100, 100 };//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{ 1000 };//力传感器输出数值与实际作用力的比值，1或1000
-    const double sensorPe[6]{ 0, 0, 0, 0, -PI/2, -PI/2 };
+    const double forceAMFactor{ 1 };//力传感器输出数值与实际作用力的比值，1或1000
+    //const double sensorPe[6]{ 0, 0, 0, PI, PI/2, 0 };
 
     double M{ 1 };
     double C[6]{ 1.5, 1.5, 1.5, 1.5, 1.5, 1.5 };
@@ -79,10 +79,11 @@ auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanPara
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
             realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
             //转换到机器人身体坐标系
-            double sensorPm[16]{ 0 };
-            Aris::Dynamic::s_pe2pm(sensorPe, sensorPm);
-            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData, forceInBody);
-            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData + 3, forceInBody + 3);
+//            double sensorPm[16]{ 0 };
+//            Aris::Dynamic::s_pe2pm(sensorPe, sensorPm);
+//            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData, forceInBody);
+//            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData + 3, forceInBody + 3);
+            Aris::Dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
         }
 
         //for test

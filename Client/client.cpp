@@ -43,8 +43,8 @@ int sendRequest(int argc, char *argv[], const char *xmlFileName)
     if (doc.LoadFile(xmlFileName) != 0)
         throw std::logic_error("failed to read configuration xml file");
 
-    std::string ip = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Connection")->Attribute("IP");
-    std::string port = doc.RootElement()->FirstChildElement("Server")->FirstChildElement("Connection")->Attribute("Port");
+    std::string ip = doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
+    std::string port = doc.RootElement()->FirstChildElement("Server")->Attribute("port");
 
     Aris::Core::Socket conn;
 

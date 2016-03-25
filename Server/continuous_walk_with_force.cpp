@@ -65,8 +65,8 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
     double realForceData[6]{ 0 };
     double forceInBody[6];
     const double forceThreshold[6]{ 40, 40, 40, 40, 40, 40 };//力传感器的触发阈值,单位N或Nm
-    const double forceAMFactor{ 1000 };//传感器数值与实际力大小的转化系数
-    const double sensorPE[6]{ 0, 0, 0, 0, -PI/2, -PI/2 };
+    const double forceAMFactor{ 1 };//传感器数值与实际力大小的转化系数
+    //const double sensorPE[6]{ 0, 0, 0, PI, PI/2, 0 };
 
     //力传感器手动清零
     if (param.count < 100)
@@ -87,10 +87,11 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
             realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
             //转换到机器人身体坐标系
-            double sensorPM[16]{ 0 };
-            Aris::Dynamic::s_pe2pm(sensorPE, sensorPM);
-            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData, forceInBody);
-            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData + 3, forceInBody + 3);
+//            double sensorPM[16]{ 0 };
+//            Aris::Dynamic::s_pe2pm(sensorPE, sensorPM);
+//            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData, forceInBody);
+//            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData + 3, forceInBody + 3);
+            Aris::Dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
         }
         //用于显示力的初始值
         if(param.count == 100)
