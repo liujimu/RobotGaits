@@ -12,6 +12,10 @@ using namespace std;
 #include <Robot_Gait.h>
 #include <Robot_Type_I.h>
 
+#include "continuous_walk_with_force.h"
+#include "push_recovery.h"
+#include "continuous_move.h"
+
 #ifdef WIN32
 #define rt_printf printf
 #endif
@@ -20,11 +24,6 @@ using namespace std;
 #include "unistd.h"
 #endif
 
-#include "continuous_walk_with_force.h"
-#include "push_recovery.h"
-#include "continuous_move.h"
-
-using namespace Aris::Core;
 
 int main(int argc, char *argv[])
 {
@@ -33,7 +32,7 @@ int main(int argc, char *argv[])
     if (argc <= 1)
     {
         std::cout << "you did not type in robot name, in this case ROBOT-III will start" << std::endl;
-        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III_Single_Motor.xml";
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_III/Robot_III.xml";
     }
     else if (std::string(argv[1]) == "III")
     {
@@ -48,8 +47,7 @@ int main(int argc, char *argv[])
         throw std::runtime_error("invalid robot name, please type in III or VIII");
     }
 
-    auto &rs = Aris::Server::ControlServer::instance();
-
+    auto &rs = aris::server::ControlServer::instance();
 
 
     rs.createModel<Robots::RobotTypeI>();
@@ -73,15 +71,15 @@ int main(int argc, char *argv[])
 
     rs.setOnExit([&]()
     {
-        Aris::Core::XmlDocument xml_doc;
+        aris::core::XmlDocument xml_doc;
         xml_doc.LoadFile(xml_address.c_str());
         auto model_xml_ele = xml_doc.RootElement()->FirstChildElement("Model");
         if (!model_xml_ele)throw std::runtime_error("can't find Model element in xml file");
         rs.model().saveXml(*model_xml_ele);
 
-        Aris::Core::stopMsgLoop();
+        aris::core::stopMsgLoop();
     });
-    Aris::Core::runMsgLoop();
+    aris::core::runMsgLoop();
 
 
 

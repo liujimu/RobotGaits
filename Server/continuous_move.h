@@ -19,7 +19,7 @@
 #define PI 3.141592653589793
 #endif
 
-struct ContinuousMoveParam final :public Aris::Server::GaitParamBase
+struct ContinuousMoveParam final :public aris::server::GaitParamBase
 {
     std::int32_t move_direction;
 };
@@ -35,11 +35,11 @@ struct CM_RecordParam
 };
 
 /*parse function*/
-void parseContinuousMoveBegin(const std::string &cmd, const map<std::string, std::string> &params, Aris::Core::Msg &msg);
-void parseContinuousMoveJudge(const std::string &cmd, const map<std::string, std::string> &params, Aris::Core::Msg &msg);
+void parseContinuousMoveBegin(const std::string &cmd, const map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseContinuousMoveJudge(const std::string &cmd, const map<std::string, std::string> &params, aris::core::Msg &msg);
 
 /*operation function*/
-int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in);
+int continuousMove(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
 
 
 #endif // CONTINUOUS_MOVE_H

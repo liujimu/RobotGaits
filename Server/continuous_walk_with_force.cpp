@@ -22,7 +22,7 @@
       <cwfs/>
 */
 
-auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
+auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     Robots::WalkParam param;
 
@@ -47,12 +47,12 @@ auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &
     msg.copyStruct(param);
 }
 
-auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
+auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     CwfState::getState().isStopping() = true;
 }
 
-auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int
+auto CWFGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int
 {
     auto &robot = static_cast<Robots::RobotBase &>(model);
     auto &param = static_cast<const Robots::WalkParam &>(param_in);
@@ -88,10 +88,10 @@ auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &pa
             realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
             //转换到机器人身体坐标系
 //            double sensorPM[16]{ 0 };
-//            Aris::Dynamic::s_pe2pm(sensorPE, sensorPM);
-//            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData, forceInBody);
-//            Aris::Dynamic::s_pm_dot_v3(sensorPM, realForceData + 3, forceInBody + 3);
-            Aris::Dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
+//            aris::dynamic::s_pe2pm(sensorPE, sensorPM);
+//            aris::dynamic::s_pm_dot_v3(sensorPM, realForceData, forceInBody);
+//            aris::dynamic::s_pm_dot_v3(sensorPM, realForceData + 3, forceInBody + 3);
+            aris::dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
         }
         //用于显示力的初始值
         if(param.count == 100)

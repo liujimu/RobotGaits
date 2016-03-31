@@ -47,11 +47,11 @@ enum WALK_DIRECTION
 };
 
 /*parse function*/
-auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
-auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
+auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
+auto CWFStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
 
 /*operation function*/
-auto CWFGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int;
+auto CWFGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
 WALK_DIRECTION forceJudge(const double *force, const double *threshold);
 
 #endif // CONTINUOUS_WALK_WITH_FORCE_H

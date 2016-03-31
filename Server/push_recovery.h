@@ -36,7 +36,7 @@ private:
 };
 
 /*gait parameters*/
-struct prParam final:public Aris::Server::GaitParamBase
+struct prParam final:public aris::server::GaitParamBase
 {
     std::int32_t pushCount{1000};
     std::int32_t recoverCount{4000};
@@ -49,10 +49,10 @@ struct prParam final:public Aris::Server::GaitParamBase
 };
 
 /*parse function*/
-auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
-auto pushRecoveryStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void;
+auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
+auto pushRecoveryStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
 
 /*operation function*/
-auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int;
+auto pushRecoveryGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;
 
 #endif // PUSH_RECOVERY_H

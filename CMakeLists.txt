@@ -76,8 +76,8 @@ set(XNNITE_LINK_LIB )
 set(OPENNI_INCL_DIR "/usr/include/ni")#open NI for kinect
 set(OPENNI_LINK_DIR "/usr/lib")
 set(OPENNI_LINK_LIB OpenNI)
-set(ARIS_INCL_DIR "/usr/Aris/include")
-set(ARIS_LINK_DIR "/usr/Aris/lib")
+set(ARIS_INCL_DIR "/usr/aris/include")
+set(ARIS_LINK_DIR "/usr/aris/lib")
 set(ARIS_LINK_LIB aris_server aris_sensor aris_dynamic aris_control aris_core)
 set(ROBOTS_INCL_DIR "/usr/Robots/include")
 set(ROBOTS_LINK_DIR "/usr/Robots/lib")
@@ -127,3 +127,29 @@ if(WIN32)
 endif(WIN32)
 
 install(TARGETS Server rbt RUNTIME DESTINATION bin)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

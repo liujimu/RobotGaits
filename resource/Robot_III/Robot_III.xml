@@ -536,46 +536,46 @@
             <ro/>
             <cwf default="cwf_param">
                 <cwf_param type="group">
-                  <totalCount abbreviation="t" type="int" default="3000"/>
-                  <distance abbreviation="d" type="double" default="0.5"/>
-                  <height abbreviation="h" type="double" default="0.05"/>
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="0.5"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
                 </cwf_param>
             </cwf>
             <cwfs/>
             <pr default="pr_param">
-              <pr_param type="group">
-                <pushCount abbreviation="p" type="int" default="1000"/>
-                <recoverCount abbreviation="r" type="int" default="4000"/>
-                <totalCount abbreviation="t" type="int" default="5000"/>
-                <firstStepCount abbreviation="f" type="int" default="2000"/>
-                <distance abbreviation="d" type="double" default="0.3"/>
-                <height abbreviation="h" type="double" default="0.05"/>
-                <angle abbreviation="a" type="double" default="5"/>
-                <descend abbreviation="c" type="double" default="0.025"/>
-              </pr_param>
+                <pr_param type="group">
+                    <pushCount abbreviation="p" type="int" default="1000"/>
+                    <recoverCount abbreviation="r" type="int" default="4000"/>
+                    <totalCount abbreviation="t" type="int" default="5000"/>
+                    <firstStepCount abbreviation="f" type="int" default="2000"/>
+                    <distance abbreviation="d" type="double" default="0.3"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
+                    <angle abbreviation="a" type="double" default="5"/>
+                    <descend abbreviation="c" type="double" default="0.025"/>
+                </pr_param>
             </pr>
             <prs/>
             <cmb default="cmb_param">
-              <cmb_param type="group">
-                <u abbreviation="u" type="double" default="0"/>
-                <v abbreviation="v" type="double" default="0"/>
-                <w abbreviation="w" type="double" default="0"/>
-                <roll abbreviation="r" type="double" default="0"/>
-                <pitch abbreviation="p" type="double" default="0"/>
-                <yaw abbreviation="y" type="double" default="0"/>
-              </cmb_param>
+                <cmb_param type="group">
+                    <u abbreviation="u" type="double" default="0"/>
+                    <v abbreviation="v" type="double" default="0"/>
+                    <w abbreviation="w" type="double" default="0"/>
+                    <roll abbreviation="r" type="double" default="0"/>
+                    <pitch abbreviation="p" type="double" default="0"/>
+                    <yaw abbreviation="y" type="double" default="0"/>
+                </cmb_param>
             </cmb>
             <cmj default="cmj_param">
-              <cmj_param type="group">
-                <isStop abbreviation="s" type="int" default="0"/>
-                <isForce abbreviation="f" type="int" default="0"/>
-                <u abbreviation="u" type="int" default="0"/>
-                <v abbreviation="v" type="int" default="0"/>
-                <w abbreviation="w" type="int" default="0"/>
-                <roll abbreviation="r" type="int" default="0"/>
-                <pitch abbreviation="p" type="int" default="0"/>
-                <yaw abbreviation="y" type="int" default="0"/>
-              </cmj_param>
+                <cmj_param type="group">
+                    <isStop abbreviation="s" type="int" default="0"/>
+                    <isForce abbreviation="f" type="int" default="0"/>
+                    <u abbreviation="u" type="int" default="0"/>
+                    <v abbreviation="v" type="int" default="0"/>
+                    <w abbreviation="w" type="int" default="0"/>
+                    <roll abbreviation="r" type="int" default="0"/>
+                    <pitch abbreviation="p" type="int" default="0"/>
+                    <yaw abbreviation="y" type="int" default="0"/>
+                </cmj_param>
             </cmj>
         </Commands>
     </Server>
@@ -607,19 +607,19 @@
                         <index_1a0b index="0x1A0B" is_tx="true">
                             <ModeOfOperationDisplay index="0x6061" subindex="0x00" type="uint8"/>
                         </index_1a0b>
-                      </PDO>
+                    </PDO>
                     <SDO>
-                        <homeMode index="0x6098" subindex="0" value="-1" type="int8" is_tx="config"/>
-                        <homeAcc index="0x609A" subindex="0" value="200000" type="uint32" is_tx="config"/>
-                        <homeHighSpeed index="0x6099" subindex="1" value="200000" type="uint32" is_tx="config"/>
-                        <homeLowSpeed index="0x6099" subindex="2" value="100000" type="uint32" is_tx="config"/>
-                        <RatioOfPosDivVel_Numerator index="0x6096" subindex="1" value="1" type="uint32" is_tx="config"/>
-                        <RatioOfPosDivVel_Divisor index="0x6096" subindex="2" value="1" type="uint32" is_tx="config"/>
-                        <homeTorqueLimit index="0x2020" subindex="1" value="950" type="int32" is_tx="config"/>
-                        <p2pMaxSpeed index="0x607F" subindex="0" value="2560" type="uint32" is_tx="config"/>
-                        <p2pSpeed index="0x6081" subindex="0" value="1792" type="uint32" is_tx="config"/>
-                        <homeOffset index="0x607C" subindex="0" value="0" type="int32" is_tx="config"/>
-                  </SDO>
+                        <homeMode index="0x6098" subindex="0" type="int8" config="-1"/>
+                        <homeAcc index="0x609A" subindex="0" type="uint32" config="200000"/>
+                        <homeHighSpeed index="0x6099" subindex="1" type="uint32" config="200000"/>
+                        <homeLowSpeed index="0x6099" subindex="2" type="uint32" config="100000"/>
+                        <RatioOfPosDivVel_Numerator index="0x6096" subindex="1" type="uint32" config="1"/>
+                        <RatioOfPosDivVel_Divisor index="0x6096" subindex="2" type="uint32" config="1"/>
+                        <homeTorqueLimit index="0x2020" subindex="1" type="int32" config="950"/>
+                        <p2pMaxSpeed index="0x607F" subindex="0" type="uint32" config="2560"/>
+                        <p2pSpeed index="0x6081" subindex="0" type="uint32" config="1792"/>
+                        <homeOffset index="0x607C" subindex="0" type="int32" config="0"/>
+                    </SDO>
                 </ElmoSoloWhistle>
                 <AtiForceSensor product_code="0x26483052" vender_id="0x00000732" alias="0">
                     <PDO>
@@ -639,6 +639,8 @@
                         </index_1601>
                     </PDO>
                     <SDO>
+                        <ForceUnit index="0x2040" subindex="0x31" type="int32" write="false"/>
+                        <TorqueUnit index="0x2040" subindex="0x32" type="int32" write="false"/>
                     </SDO>
                 </AtiForceSensor>
             </SlaveType>

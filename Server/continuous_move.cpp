@@ -40,7 +40,7 @@ std::atomic_bool isForce;
 std::atomic_bool isContinue;
 std::atomic_int moveDir[6];
 
-void parseContinuousMoveBegin(const std::string &cmd, const map<std::string, std::string> &params, Aris::Core::Msg &msg)
+void parseContinuousMoveBegin(const std::string &cmd, const map<std::string, std::string> &params, aris::core::Msg &msg)
 {
     ContinuousMoveParam param;
 
@@ -84,7 +84,7 @@ void parseContinuousMoveBegin(const std::string &cmd, const map<std::string, std
     std::cout<<"finished parse"<<std::endl;
 }
 
-void parseContinuousMoveJudge(const std::string &cmd, const map<std::string, std::string> &params, Aris::Core::Msg &msg)
+void parseContinuousMoveJudge(const std::string &cmd, const map<std::string, std::string> &params, aris::core::Msg &msg)
 {
     for(auto &i:params)
     {
@@ -136,7 +136,7 @@ void parseContinuousMoveJudge(const std::string &cmd, const map<std::string, std
 }
 
 /*****C & forceRatio must be adjusted when used on different robots*****/
-int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)
+int continuousMove(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)
 {
     auto &robot = static_cast<Robots::RobotBase &>(model);
     auto &param = static_cast<const ContinuousMoveParam &>(param_in);
@@ -207,7 +207,7 @@ int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBa
                 CMRP.force[4]=(param.force_data->at(0).My-CMRP.forceAvg[4])/forceRatio;
                 CMRP.force[5]=(param.force_data->at(0).Mz-CMRP.forceAvg[5])/forceRatio;
 
-                Aris::Dynamic::s_f2f(*robot.forceSensorMak().prtPm(), CMRP.force, forceInBody);
+                aris::dynamic::s_f2f(*robot.forceSensorMak().prtPm(), CMRP.force, forceInBody);
                 int num1;
                 int num2;
                 double fmax{0};
@@ -260,14 +260,14 @@ int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBa
         double pBody[6];
         if(isForce==false)
         {
-            Aris::Dynamic::s_pe2pm(deltaPE,*deltaPm,"213");
+            aris::dynamic::s_pe2pm(deltaPE,*deltaPm,"213");
         }
         else
         {
-            Aris::Dynamic::s_pe2pm(deltaPE,*deltaPm,"123");
+            aris::dynamic::s_pe2pm(deltaPE,*deltaPm,"123");
         }
-        Aris::Dynamic::s_pm_dot_pm(*bodyPm,*deltaPm,*realPm);
-        Aris::Dynamic::s_pm2pe(*realPm,realPE,"313");
+        aris::dynamic::s_pm_dot_pm(*bodyPm,*deltaPm,*realPm);
+        aris::dynamic::s_pm2pe(*realPm,realPE,"313");
 
 
         robot.SetPeb(realPE);
@@ -300,9 +300,9 @@ int continuousMove(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBa
 
         robot.GetPmb(*bodyPm);
         robot.GetPee(nowPee);
-        Aris::Dynamic::s_pe2pm(deltaPE,*deltaPm,"213");
-        Aris::Dynamic::s_pm_dot_pm(*bodyPm,*deltaPm,*realPm);
-        Aris::Dynamic::s_pm2pe(*realPm,realPE,"313");
+        aris::dynamic::s_pe2pm(deltaPE,*deltaPm,"213");
+        aris::dynamic::s_pm_dot_pm(*bodyPm,*deltaPm,*realPm);
+        aris::dynamic::s_pm2pe(*realPm,realPE,"313");
 
         robot.SetPeb(realPE);
         robot.SetPee(nowPee);

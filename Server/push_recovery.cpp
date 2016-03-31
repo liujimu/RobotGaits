@@ -27,12 +27,12 @@
       <prs/>
 */
 
-auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanParamBase &param_in)->int
+auto pushRecoveryGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int
 {
     auto &robot = static_cast<Robots::RobotBase &>(model);
     auto &param = static_cast<const prParam &>(param_in);
 
-    static Aris::Dynamic::FloatMarker beginMak{ robot.ground() };
+    static aris::dynamic::FloatMarker beginMak{ robot.ground() };
     static double beginPee[18];
     static double bodyPe[6];
     static double bodyVel[6];
@@ -80,10 +80,10 @@ auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanPara
             realForceData[i]=(param.force_data->at(0).fce[i] - forceOffsetAvg[i]) / forceAMFactor;
             //转换到机器人身体坐标系
 //            double sensorPm[16]{ 0 };
-//            Aris::Dynamic::s_pe2pm(sensorPe, sensorPm);
-//            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData, forceInBody);
-//            Aris::Dynamic::s_pm_dot_v3(sensorPm, realForceData + 3, forceInBody + 3);
-            Aris::Dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
+//            aris::dynamic::s_pe2pm(sensorPe, sensorPm);
+//            aris::dynamic::s_pm_dot_v3(sensorPm, realForceData, forceInBody);
+//            aris::dynamic::s_pm_dot_v3(sensorPm, realForceData + 3, forceInBody + 3);
+            aris::dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
         }
 
         //for test
@@ -249,7 +249,7 @@ auto pushRecoveryGait(Aris::Dynamic::Model &model, const Aris::Dynamic::PlanPara
     }
 }
 
-auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
+auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     prParam param;
 
@@ -294,7 +294,7 @@ auto pushRecoveryParse(const std::string &cmd, const std::map<std::string, std::
     msg.copyStruct(param);
 }
 
-auto pushRecoveryStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, Aris::Core::Msg &msg)->void
+auto pushRecoveryStopParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     PrState::getState().isStopping() = true;
 }

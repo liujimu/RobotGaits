@@ -2,7 +2,7 @@
 
 int sendRequest(int argc, char *argv[], const char *xmlFileName)
 {
-    /*需要去除命令名的路径和扩展名*/
+    // 需要去除命令名的路径和扩展名 //
     std::string cmdName(argv[0]);
 
 #ifdef WIN32
@@ -23,30 +23,25 @@ int sendRequest(int argc, char *argv[], const char *xmlFileName)
         cmdName = cmdName.substr(0, cmdName.rfind('.'));
     }
 
-    /*添加命令的所有参数*/
+    // 添加命令的所有参数 //
     for (int i = 1; i < argc; ++i)
     {
         cmdName = cmdName + " " + argv[i];
     }
 
-
-
-    /*构造msg，这里需要先copy命令名称，然后依次copy各个参数*/
-    Aris::Core::Msg msg;
+    // 构造msg，这里需要先copy命令名称，然后依次copy各个参数 //
+    aris::core::Msg msg;
     msg.copy(cmdName.c_str());
 
+    // 连接并发送msg //
+    aris::core::XmlDocument doc;
 
-
-    /*连接并发送msg*/
-    Aris::Core::XmlDocument doc;
-
-    if (doc.LoadFile(xmlFileName) != 0)
-        throw std::logic_error("failed to read configuration xml file");
+    if (doc.LoadFile(xmlFileName) != 0)	throw std::logic_error("failed to read configuration xml file");
 
     std::string ip = doc.RootElement()->FirstChildElement("Server")->Attribute("ip");
     std::string port = doc.RootElement()->FirstChildElement("Server")->Attribute("port");
 
-    Aris::Core::Socket conn;
+    aris::core::Socket conn;
 
     while (true)
     {
@@ -58,12 +53,12 @@ int sendRequest(int argc, char *argv[], const char *xmlFileName)
         catch (std::exception &)
         {
             std::cout << "failed to connect server, will retry in 1 second" << std::endl;
-            Aris::Core::msSleep(1000);
+            aris::core::msSleep(1000);
         }
 
     }
 
-    Aris::Core::Msg ret = conn.sendRequest(msg);
+    aris::core::Msg ret = conn.sendRequest(msg);
 
     /*错误处理*/
     if (ret.size() > 0)
