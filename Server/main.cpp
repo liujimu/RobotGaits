@@ -15,6 +15,7 @@ using namespace std;
 #include "continuous_walk_with_force.h"
 #include "push_recovery.h"
 #include "continuous_move.h"
+#include "twist_waist.h"
 
 #ifdef WIN32
 #define rt_printf printf

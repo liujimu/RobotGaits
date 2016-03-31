@@ -577,6 +577,13 @@
                     <yaw abbreviation="y" type="int" default="0"/>
                 </cmj_param>
             </cmj>
+            <tw default="tw_param">
+                <tw_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <pitchMax abbreviation="p" type="double" default="5"/>
+                    <rollMax abbreviation="r" type="double" default="5"/>
+                </tw_param>
+            </tw>
         </Commands>
     </Server>
     <Controller>
