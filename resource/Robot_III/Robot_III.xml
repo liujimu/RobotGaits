@@ -579,9 +579,11 @@
             </cmj>
             <tw default="tw_param">
                 <tw_param type="group">
-                    <totalCount abbreviation="t" type="int" default="3000"/>
-                    <pitchMax abbreviation="p" type="double" default="5"/>
-                    <rollMax abbreviation="r" type="double" default="5"/>
+                    <totalCount abbreviation="t" type="int" default="5000"/>
+                    <pitchMax abbreviation="p" type="double" default="15"/>
+                    <rollMax abbreviation="r" type="double" default="15"/>
+                    <diameter abbreviation="d" type="double" default="0.2"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
                 </tw_param>
             </tw>
         </Commands>

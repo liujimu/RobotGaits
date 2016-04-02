@@ -21,9 +21,11 @@
 
 struct twParam final:public aris::server::GaitParamBase
 {
-    std::int32_t totalCount{3000};
-    double pitchMax{0.08};
-    double rollMax{0.08};
+    std::int32_t totalCount{ 5000 };
+    double pitchMax{ 0.2 };
+    double rollMax{ 0.2 };
+    double diameter{ 0.2 };
+    double height{ 0.05 };
 };
 
 auto twistWaistParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
