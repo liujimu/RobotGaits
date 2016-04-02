@@ -63,8 +63,8 @@ auto twistWaistGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
     static aris::dynamic::FloatMarker beginMak{ robot.ground() };
     static double beginPee[18];
     int totalCount = param.totalCount;
-    int prepCount = param.totalCount / 5;
-    int twistCount = param.totalCount * 3 / 5;
+    int prepCount = param.totalCount / 6;
+    int twistCount = param.totalCount * 4 / 6;
 
     if (param.count == 0)
     {
