@@ -16,6 +16,7 @@ using namespace std;
 #include "push_recovery.h"
 #include "continuous_move.h"
 #include "twist_waist.h"
+#include "say_hello.h"
 
 #ifdef WIN32
 #define rt_printf printf
@@ -68,6 +69,7 @@ int main(int argc, char *argv[])
     rs.addCmd("cmb", parseContinuousMoveBegin, continuousMove);
     rs.addCmd("cmj", parseContinuousMoveJudge, continuousMove);
     rs.addCmd("tw", twistWaistParse, twistWaistGait);
+    rs.addCmd("sh", sayHelloParse, sayHelloGait);
 
     rs.open();
 
