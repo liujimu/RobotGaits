@@ -14,10 +14,10 @@
 /*
             <tw default="tw_param">
                 <tw_param type="group">
-                    <totalCount abbreviation="t" type="int" default="5000"/>
-                    <pitchMax abbreviation="p" type="double" default="15"/>
-                    <rollMax abbreviation="r" type="double" default="15"/>
-                    <diameter abbreviation="d" type="double" default="0.2"/>
+                    <totalCount abbreviation="t" type="int" default="9000"/>
+                    <pitchMax abbreviation="p" type="double" default="12"/>
+                    <rollMax abbreviation="r" type="double" default="12"/>
+                    <diameter abbreviation="d" type="double" default="0.1"/>
                     <height abbreviation="h" type="double" default="0.05"/>
                 </tw_param>
             </tw>
@@ -63,8 +63,8 @@ auto twistWaistGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
     static aris::dynamic::FloatMarker beginMak{ robot.ground() };
     static double beginPee[18];
     int totalCount = param.totalCount;
-    int prepCount = param.totalCount / 5;
-    int twistCount = param.totalCount * 3 / 5;
+    int prepCount = param.totalCount / 6;
+    int twistCount = param.totalCount * 4 / 6;
 
     if (param.count == 0)
     {

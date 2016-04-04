@@ -21,10 +21,10 @@
 
 struct twParam final:public aris::server::GaitParamBase
 {
-    std::int32_t totalCount{ 5000 };
+    std::int32_t totalCount{ 9000 };
     double pitchMax{ 0.2 };
     double rollMax{ 0.2 };
-    double diameter{ 0.2 };
+    double diameter{ 0.1 };
     double height{ 0.05 };
 };
 
