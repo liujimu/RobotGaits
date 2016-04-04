@@ -21,11 +21,13 @@
 
 struct shParam final :public aris::server::GaitParamBase
 {
-	std::int32_t totalCount{ 3000 };
-	double stepLength{ 0.2 };
-	double height{ 0.05 };
-	double pitchMax{ PI / 12 };
-	int helloTimes{ 1 };
+    std::int32_t totalCount{ 3000 };
+    double stepLength{ 0.4 };
+    double stepHeight{ 0.05 };
+    double bodyUp{ 0.15 };
+    double bodyPitch{ PI / 9 };
+    double helloAmplitude{ 0.1 };
+    std::int32_t helloTimes{ 1 };
 };
 
 auto sayHelloParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
