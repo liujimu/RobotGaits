@@ -10,19 +10,6 @@
 #include "unistd.h"
 #endif
 
-/*将以下注释代码添加到xml文件*/
-/*
-            <tw default="tw_param">
-                <tw_param type="group">
-                    <totalCount abbreviation="t" type="int" default="9000"/>
-                    <pitchMax abbreviation="p" type="double" default="12"/>
-                    <rollMax abbreviation="r" type="double" default="12"/>
-                    <diameter abbreviation="d" type="double" default="0.1"/>
-                    <height abbreviation="h" type="double" default="0.05"/>
-                </tw_param>
-            </tw>
-*/
-
 auto twistWaistParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     twParam param;

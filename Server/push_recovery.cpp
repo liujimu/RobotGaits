@@ -10,23 +10,6 @@
 #include "unistd.h"
 #endif
 
-/*将以下注释代码添加到xml文件*/
-/*
-      <pr default="pr_param">
-        <pr_param type="group">
-          <pushCount abbreviation="p" type="int" default="1000"/>
-          <recoverCount abbreviation="r" type="int" default="4000"/>
-          <totalCount abbreviation="t" type="int" default="5000"/>
-          <firstStepCount abbreviation="f" type="int" default="2000"/>
-          <distance abbreviation="d" type="double" default="0.3"/>
-          <height abbreviation="h" type="double" default="0.05"/>
-          <angle abbreviation="a" type="double" default="5"/>
-          <descend abbreviation="c" type="double" default="0.025"/>
-        </pr_param>
-      </pr>
-      <prs/>
-*/
-
 auto pushRecoveryGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int
 {
     auto &robot = static_cast<Robots::RobotBase &>(model);

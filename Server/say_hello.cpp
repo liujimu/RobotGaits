@@ -10,21 +10,6 @@
 #include "unistd.h"
 #endif
 
-/*将以下注释代码添加到xml文件*/
-/*
-            <sh default="sh_param">
-                <sh_param type="group">
-                    <totalCount abbreviation="t" type="int" default="3000"/>
-                    <stepLength abbreviation="d" type="double" default="0.4"/>
-                    <stepHeight abbreviation="h" type="double" default="0.05"/>
-                    <bodyUp abbreviation="u" type="double" default="0.15"/>
-                    <bodyPitch abbreviation="p" type="double" default="20"/>
-                    <helloAmplitude abbreviation="a" type="double" default="0.1"/>
-                    <helloTimes abbreviation="n" type="int" default="1"/>
-                </sh_param>
-            </sh>
-*/
-
 auto sayHelloParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     shParam param;

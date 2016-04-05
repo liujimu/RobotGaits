@@ -1,3 +1,24 @@
+/* 步态功能：顺着力方向迈一步，伴有身体姿态变化，最终恢复到起始姿态
+ * by liujimu, 2016-3-30
+ */
+
+/*将以下注释代码添加到xml文件*/
+/*
+      <pr default="pr_param">
+        <pr_param type="group">
+          <pushCount abbreviation="p" type="int" default="1000"/>
+          <recoverCount abbreviation="r" type="int" default="4000"/>
+          <totalCount abbreviation="t" type="int" default="5000"/>
+          <firstStepCount abbreviation="f" type="int" default="2000"/>
+          <distance abbreviation="d" type="double" default="0.3"/>
+          <height abbreviation="h" type="double" default="0.05"/>
+          <angle abbreviation="a" type="double" default="5"/>
+          <descend abbreviation="c" type="double" default="0.025"/>
+        </pr_param>
+      </pr>
+      <prs/>
+*/
+
 #ifndef PUSH_RECOVERY_H
 #define PUSH_RECOVERY_H
 

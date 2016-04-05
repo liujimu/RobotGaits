@@ -1,3 +1,20 @@
+/* 步态功能：扭腰
+ * by liujimu, 2016-4-1
+ */
+
+/*将以下注释代码添加到xml文件*/
+/*
+            <tw default="tw_param">
+                <tw_param type="group">
+                    <totalCount abbreviation="t" type="int" default="9000"/>
+                    <pitchMax abbreviation="p" type="double" default="12"/>
+                    <rollMax abbreviation="r" type="double" default="12"/>
+                    <diameter abbreviation="d" type="double" default="0.1"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
+                </tw_param>
+            </tw>
+*/
+
 #ifndef TWIST_WAIST_H
 #define TWIST_WAIST_H
 

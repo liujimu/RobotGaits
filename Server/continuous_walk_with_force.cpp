@@ -10,18 +10,6 @@
 #include "unistd.h"
 #endif
 
-/*将以下注释代码添加到xml文件*/
-/*
-      <cwf default="cwf_param">
-        <cwf_param type="group">
-          <totalCount abbreviation="t" type="int" default="3000"/>
-          <distance abbreviation="d" type="double" default="0.5"/>
-          <height abbreviation="h" type="double" default="0.05"/>
-        </cwf_param>
-      </cwf>
-      <cwfs/>
-*/
-
 auto CWFParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
 {
     Robots::WalkParam param;
