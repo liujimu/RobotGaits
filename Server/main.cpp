@@ -14,6 +14,7 @@ using namespace std;
 
 #include "continuous_walk_with_force.h"
 #include "push_recovery.h"
+#include "peg_in_hole.h"
 #include "continuous_move.h"
 #include "twist_waist.h"
 #include "say_hello.h"
@@ -66,6 +67,8 @@ int main(int argc, char *argv[])
     rs.addCmd("cwfs", CWFStopParse, CWFGait);
     rs.addCmd("pr", pushRecoveryParse, pushRecoveryGait);
     rs.addCmd("prs", pushRecoveryStopParse, pushRecoveryGait);
+    rs.addCmd("ph", pegInHoleParse, pegInHoleGait);
+    rs.addCmd("phs", pegInHoleContinueParse, pegInHoleGait);
     rs.addCmd("cmb", parseContinuousMoveBegin, continuousMove);
     rs.addCmd("cmj", parseContinuousMoveJudge, continuousMove);
     rs.addCmd("tw", twistWaistParse, twistWaistGait);
