@@ -159,6 +159,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             if( PhState::getState().isContinued() && maxVel < 0.0001)
             {
                 process = PegInHoleProcess::ALIGN;
+                std::fill(bodyVel, bodyVel + 3, 0);
                 step = 0;
 
                 //for test
@@ -206,6 +207,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             if (param.count - beginCount > 500 && forceInBodyMag > param.contactForce)
             {
                 std::copy(Peb, Peb + 3, contactPos[step]);
+                std::fill(bodyVel, bodyVel + 3, 0);
                 ++step;
                 beginCount = param.count + 1;
                 //for test
