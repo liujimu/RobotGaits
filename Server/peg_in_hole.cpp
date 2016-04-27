@@ -54,11 +54,11 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         robot.GetPee(beginPee, beginMak);
     }
 
-    //Force Control
+    //阻抗控制参数
     double F[3]{ 0, 0, 0 };
     double M[3]{ 1, 1, 1 };
     double K[3]{ 0, 0, 0 };
-    double C[3]{ 50, 50, 50 };
+    double C[3]{ 500, 500, 500 };
     const double kClockPeriod{ 0.001 };
     static double bodyDisp[3]{ 0 };
     static double bodyVel[3]{ 0 };
@@ -80,6 +80,11 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     static std::int32_t beginCount{ 0 };
     static mbParam mb_param;
     const double kClearance{ 0.05 };
+    static bool isReturning{ false };
+
+    double Peb[6], Pee[18];
+    std::fill(Peb, Peb + 6, 0);
+    std::copy(beginPee, beginPee + 18, Pee);
 
     //力传感器手动清零
     if (param.count < 100)
@@ -95,10 +100,6 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     }
     else
     {
-        double Peb[6], Pee[18];
-        std::fill(Peb, Peb + 6, 0);
-        std::copy(beginPee, beginPee + 18, Pee);
-
         for(int i = 0; i < 6; i++)
         {
             forceOffsetAvg[i] = forceOffsetSum[i] / 100;
@@ -132,75 +133,85 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                     F[i] = forceInBody[i] / kForceMax[i];
                 }
             }
+
+            double maxVel{ 0 };
             for (int i = 0; i < 3; i++)
             {
                 bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
                 bodyVel[i] += bodyAcc[i] * kClockPeriod;
                 bodyDisp[i] += bodyVel[i] * kClockPeriod;
-                std::copy(bodyDisp, bodyDisp + 3, Peb);
-            }
 
-            if( PhState::getState().isContinued() )
+                if (std::fabs(bodyVel[i]) > maxVel)
+                {
+                    maxVel = std::fabs(bodyVel[i]);
+                }
+            }
+            std::copy(bodyDisp, bodyDisp + 3, Peb);
+            robot.SetPeb(Peb, beginMak);
+            robot.SetPee(Pee, beginMak);
+
+            if( PhState::getState().isContinued() && maxVel < 0.0001)
             {
                 process = PegInHoleProcess::ALIGN;
                 step = 0;
+                //for test
+                rt_printf("Preparation finished.\n");
             }
         }
 
         //碰边，找孔中心
         else if (process == PegInHoleProcess::ALIGN)
         {
-            if( PhState::getState().isContinued() )
+            //设置运动方向，三个接触点构成一个直角三角形
+            if (step == 0)
             {
-                //设置运动方向，三个接触点构成一个直角三角形
-                if (step == 0)
+                F[0] = 1;
+                F[1] = 0;
+                F[2] = 0;
+            }
+            else if (step == 1)
+            {
+                F[0] = -std::sqrt(0.5);
+                F[1] = 0;
+                F[2] = -std::sqrt(0.5);
+            }
+            else if (step == 2)
+            {
+                F[0] = -std::sqrt(0.5);
+                F[1] = 0;
+                F[2] = std::sqrt(0.5);
+            }
+            //使用阻抗模型计算身体位移、速度、加速度
+            for (int i = 0; i < 3; i++)
+            {
+                bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
+                bodyVel[i] += bodyAcc[i] * kClockPeriod;
+                bodyDisp[i] += bodyVel[i] * kClockPeriod;
+            }
+            std::copy(bodyDisp, bodyDisp + 3, Peb);
+            robot.SetPeb(Peb, beginMak);
+            robot.SetPee(Pee, beginMak);
+            //当接触力超过阈值时，记录当前身体坐标为接触点坐标，并开始寻找下一个接触点
+            double forceInBodyMag = std::sqrt(std::pow(forceInBody[0], 2) + std::pow(forceInBody[2], 2));
+            if (param.count - beginCount > 500 && forceInBodyMag > param.contactForce)
+            {
+                std::copy(Peb, Peb + 3, contactPos[step]);
+                ++step;
+                beginCount = param.count + 1;
+                //完成三次触碰后，取首尾两个接触点中点为孔中心，并进入下一流程
+                if (step > 2)
                 {
-                    F[0] = 1;
-                    F[1] = 0;
-                    F[2] = 0;
-                }
-                else if (step == 1)
-                {
-                    F[0] = -std::sqrt(0.5);
-                    F[1] = 0;
-                    F[2] = -std::sqrt(0.5);
-                }
-                else if (step == 2)
-                {
-                    F[0] = -std::sqrt(0.5);
-                    F[1] = 0;
-                    F[2] = std::sqrt(0.5);
-                }
-                //使用阻抗模型计算身体位移、速度、加速度
-                for (int i = 0; i < 3; i++)
-                {
-                    bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
-                    bodyVel[i] += bodyAcc[i] * kClockPeriod;
-                    bodyDisp[i] += bodyVel[i] * kClockPeriod;
-                }
-                std::copy(bodyDisp, bodyDisp + 3, Peb);
-                robot.SetPeb(Peb, beginMak);
-                robot.SetPee(Pee, beginMak);
-                //当接触力超过阈值时，记录当前身体坐标为接触点坐标，并开始寻找下一个接触点
-                double forceInBodyMag = std::sqrt(std::pow(forceInBody[0], 2) + std::pow(forceInBody[2], 2));
-                if (param.count - beginCount > 200 && forceInBodyMag > param.contactForce)
-                {
-                    std::copy(Peb, Peb + 3, contactPos[step]);
-                    ++step;
-                    beginCount = param.count + 1;
-                    //完成三次触碰后，取首尾两个接触点中点为孔中心，并进入下一流程
-                    if (step > 2)
+                    for (int i = 0; i < 3; ++i)
                     {
-                        for (int i = 0; i < 3; ++i)
-                        {
-                            holeCenterPos[i] = (contactPos[0][i] + contactPos[2][i]) / 2;
-                        }
-                        process = PegInHoleProcess::INSERT;
-                        PhState::getState().isContinued() = false;
-                        step = 0;
-                        //for test
-                        rt_printf("Alignment finished.\n");
+                        holeCenterPos[i] = (contactPos[0][i] + contactPos[2][i]) / 2;
                     }
+                    process = PegInHoleProcess::INSERT;
+                    PhState::getState().isContinued() = false;
+                    step = 0;
+                    //for test
+                    rt_printf("Alignment finished.\n");
+                    rt_printf("beginCount: %d\n", beginCount);
+                    rt_printf("holeCenterPos: %f %f %f\n", holeCenterPos[0], holeCenterPos[1], holeCenterPos[2]);
                 }
             }
         }
@@ -236,7 +247,15 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         //抽出并返回原位
         else if (process == PegInHoleProcess::RETURN)
         {
-            if( PhState::getState().isContinued() )
+            if(!isReturning)
+            {
+                if( PhState::getState().isContinued() )
+                {
+                    beginCount = param.count + 1;
+                    isReturning = true;
+                }
+            }
+            else
             {
                 mb_param.count = param.count - beginCount;
                 mb_param.totalCount = param.totalCount;
@@ -261,12 +280,26 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                     {
                         process = PegInHoleProcess::STOP;
                         PhState::getState().isContinued() = false;
+                        isReturning = true;
                         step = 0;
                         //for test
                         rt_printf("Body returned.\n");
                     }
                 }
             }
+        }
+
+        //for test
+        if (param.count % 3000 == 0)
+        {
+            rt_printf("Process: %d\n", (int)process);
+            rt_printf("Step: %d\n", (int)step);
+            rt_printf("Continue State: %d\n", PhState::getState().isContinued());
+            rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+            rt_printf("Peb: %f %f %f\n", Peb[0], Peb[1], Peb[2]);
+            rt_printf("Pee: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+                      Pee[0], Pee[1], Pee[2], Pee[3], Pee[4], Pee[5], Pee[6], Pee[7], Pee[8],
+                    Pee[9], Pee[10], Pee[11], Pee[12], Pee[13], Pee[14], Pee[15], Pee[16], Pee[17]);
         }
     }
 
@@ -289,13 +322,13 @@ auto moveBodyGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBas
     auto &param = static_cast<const mbParam &>(param_in);
 
     //初始化
-    static double beginPee[18], beginPeb[18];
+    static double beginPee[18], beginPeb[6];
     static double targetPeb[6];
     if (param.count == 0)
     {
         robot.GetPee(beginPee, *param.beginMak);
         robot.GetPeb(beginPeb, *param.beginMak);
-        std::copy(param.targetPeb, param.targetPeb + 18, targetPeb);
+        std::copy(param.targetPeb, param.targetPeb + 6, targetPeb);
     }
 
     double Peb[6], Pee[18];
@@ -307,6 +340,21 @@ auto moveBodyGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBas
     }
     robot.SetPeb(Peb, *param.beginMak);
     robot.SetPee(Pee, *param.beginMak);
+
+    //for test
+    if (param.count % 1000 == 0)
+    {
+        rt_printf("mb_count: %d\n", param.count);
+        rt_printf("mb_s: %f\n", s);
+        rt_printf("mb_beginPeb: %f %f %f\n", beginPeb[0], beginPeb[1], beginPeb[2]);
+        rt_printf("mb_beginPee: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+                  beginPee[0], beginPee[1], beginPee[2], beginPee[3], beginPee[4], beginPee[5], beginPee[6], beginPee[7], beginPee[8],
+                beginPee[9], beginPee[10], beginPee[11], beginPee[12], beginPee[13], beginPee[14], beginPee[15], beginPee[16], beginPee[17]);
+        rt_printf("mb_Peb: %f %f %f\n", Peb[0], Peb[1], Peb[2]);
+        rt_printf("mb_Pee: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+                  Pee[0], Pee[1], Pee[2], Pee[3], Pee[4], Pee[5], Pee[6], Pee[7], Pee[8],
+                Pee[9], Pee[10], Pee[11], Pee[12], Pee[13], Pee[14], Pee[15], Pee[16], Pee[17]);
+    }
 
     return param.totalCount - param.count - 1;
 }
