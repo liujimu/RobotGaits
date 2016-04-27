@@ -58,7 +58,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     double F[3]{ 0, 0, 0 };
     double M[3]{ 1, 1, 1 };
     double K[3]{ 0, 0, 0 };
-    double C[3]{ 100, 100, 100 };
+    double C[3]{ 50, 50, 50 };
     const double kClockPeriod{ 0.001 };
     static double bodyDisp[3]{ 0 };
     static double bodyVel[3]{ 0 };
@@ -73,13 +73,13 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     const double kForceMax[6]{ 100, 100, 100, 500, 500, 500 }; //力的上限
 
     //找孔中心
-    static int step{ 0 };
     static double contactPos[3][3]{ 0 };
     static double holeCenterPos[3]{ 0 };
     static PegInHoleProcess process{ PegInHoleProcess::PREPARE };
+    static std::int32_t step{ 0 };
     static std::int32_t beginCount{ 0 };
     static mbParam mb_param;
-    const double kClearance{ 0.05 };
+    const double kClearance{ 0.04 };
     static bool isReturning{ false };
 
     double Peb[6], Pee[18];
@@ -116,7 +116,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         //用于显示力的初始值
         if(param.count == 100)
         {
-            rt_printf("forceOffsetAvg: %f %f %f\n", forceOffsetAvg[0], forceOffsetAvg[1], forceOffsetAvg[3]);
+            rt_printf("forceOffsetAvg: %f %f %f\n", forceOffsetAvg[0], forceOffsetAvg[1], forceOffsetAvg[2]);
         }
 
         //人手推动机器人身体移动
@@ -136,7 +136,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    F[i] = forceInBody[i] / kForceMax[i];
+                    F[i] = 2 * forceInBody[i] / kForceMax[i];
                 }
             }
 
@@ -163,10 +163,12 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                 step = 0;
 
                 //for test
-                rt_printf("Preparation finished.\n");
+                rt_printf("Preparation finished.\n\n");
                 rt_printf("\nProcess: %d\n", (int)process);
                 rt_printf("Step: %d\n", (int)step);
                 rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
+                rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+                rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
             }
         }
 
@@ -195,7 +197,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             //使用阻抗模型计算身体位移、速度、加速度
             for (int i = 0; i < 3; i++)
             {
-                bodyAcc[i] = (F[i] / 5 - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
+                bodyAcc[i] = (F[i] / 4 - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
                 bodyVel[i] += bodyAcc[i] * kClockPeriod;
                 bodyDisp[i] += bodyVel[i] * kClockPeriod;
             }
@@ -214,6 +216,8 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                 rt_printf("\nProcess: %d\n", (int)process);
                 rt_printf("Step: %d\n", (int)step);
                 rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
+                rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+                rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
 
                 //完成三次触碰后，取首尾两个接触点中点为孔中心，并进入下一流程
                 if (step > 2)
@@ -226,7 +230,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                     PhState::getState().isContinued() = false;
                     step = 0;
                     //for test
-                    rt_printf("Alignment finished.\n");
+                    rt_printf("Alignment finished.\n\n");
                     rt_printf("beginCount: %d\n", beginCount);
                     rt_printf("holeCenterPos: %f %f %f\n", holeCenterPos[0], holeCenterPos[1], holeCenterPos[2]);
                 }
@@ -245,6 +249,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             if (step == 1)
             {
                 mb_param.targetPeb[1] += param.holeDepth;
+                mb_param.totalCount = 2 * mb_param.totalCount;
             }
             int ret = moveBodyGait(robot, mb_param);
             if (ret == 0)
@@ -255,13 +260,15 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                 rt_printf("\nProcess: %d\n", (int)process);
                 rt_printf("Step: %d\n", (int)step);
                 rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
+                rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+                rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
 
                 if (step > 1)
                 {
                     process = PegInHoleProcess::RETURN;
                     step = 0;
                     //for test
-                    rt_printf("Insertion finished.\n");
+                    rt_printf("Insertion finished.\n\n");
                 }
             }
         }
@@ -269,7 +276,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         //抽出并返回原位
         else if (process == PegInHoleProcess::RETURN)
         {
-            if(!isReturning)
+            if (!isReturning)
             {
                 if( PhState::getState().isContinued() )
                 {
@@ -288,6 +295,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                 {
                     std::copy(holeCenterPos, holeCenterPos + 3, mb_param.targetPeb);
                     mb_param.targetPeb[1] -= kClearance;
+                    mb_param.totalCount = 2 * mb_param.totalCount;
                 }
                 else if (step == 1)
                 {
@@ -302,40 +310,41 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                     rt_printf("\nProcess: %d\n", (int)process);
                     rt_printf("Step: %d\n", (int)step);
                     rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
+                    rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+                    rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
 
                     if (step > 1)
                     {
                         process = PegInHoleProcess::STOP;
                         step = 0;
                         //for test
-                        rt_printf("Body returned.\n");
+                        rt_printf("Body returned.\n\n");
                     }
                 }
             }
         }
 
         //for test
-        if (param.count % 2000 == 0)
-        {
-            rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
-            rt_printf("Peb: %f %f %f\n", Peb[0], Peb[1], Peb[2]);
-            rt_printf("Pee: %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
-                      Pee[0], Pee[1], Pee[2], Pee[3], Pee[4], Pee[5], Pee[6], Pee[7], Pee[8],
-                    Pee[9], Pee[10], Pee[11], Pee[12], Pee[13], Pee[14], Pee[15], Pee[16], Pee[17]);
-        }
+//        if (param.count % 2000 == 0)
+//        {
+//            rt_printf("\nForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+//            rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
+//        }
     }
 
     if (process == PegInHoleProcess::STOP)
     {
         //for test
         rt_printf("Gait finished.\n");
-        rt_printf("FinalPeb: %f %f %f\n", Peb[0], Peb[1], Peb[2]);
 
         std::fill(bodyDisp, bodyDisp + 3, 0);
         std::fill(bodyVel, bodyVel + 3, 0);
         process = PegInHoleProcess::PREPARE;
         PhState::getState().isContinued() = false;
+        step = 0;
+        beginCount = 0;
         isReturning = false;
+
         return 0;
     }
     else
@@ -356,7 +365,8 @@ auto moveBodyGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBas
     {
         robot.GetPee(beginPee, *param.beginMak);
         robot.GetPeb(beginPeb, *param.beginMak);
-        std::copy(param.targetPeb, param.targetPeb + 6, targetPeb);
+        robot.GetPeb(targetPeb, *param.beginMak);
+        std::copy(param.targetPeb, param.targetPeb + 3, targetPeb);
     }
 
     double Peb[6], Pee[18];
@@ -370,13 +380,14 @@ auto moveBodyGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBas
     robot.SetPee(Pee, *param.beginMak);
 
     //for test
-    if (param.count % 1000 == 0)
-    {
-        rt_printf("mb_count: %d\n", param.count);
-        rt_printf("mb_s: %f\n", s);
-        rt_printf("mb_beginPeb: %f %f %f\n", beginPeb[0], beginPeb[1], beginPeb[2]);
-        rt_printf("mb_Peb: %f %f %f\n", Peb[0], Peb[1], Peb[2]);
-    }
+//    if (param.count % 1000 == 0)
+//    {
+//        rt_printf("mb_count: %d\n", param.count);
+//        rt_printf("mb_s: %f\n", s);
+//        rt_printf("mb_beginPeb:\t %f %f %f\n", beginPeb[0], beginPeb[1], beginPeb[2]);
+//        rt_printf("mb_targetPeb:\t %f %f %f\n", targetPeb[0], targetPeb[1], targetPeb[2]);
+//        rt_printf("mb_Peb:\t\t %f %f %f\n", Peb[0], Peb[1], Peb[2]);
+//    }
 
     return param.totalCount - param.count - 1;
 }

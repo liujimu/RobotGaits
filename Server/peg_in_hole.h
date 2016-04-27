@@ -7,11 +7,11 @@
             <ph default="ph_param">
                 <ph_param type="group">
                     <totalCount abbreviation="t" type="int" default="2000"/>
-                    <holeDepth abbreviation="d" type="double" default="0.2"/>
-                    <contactForce abbreviation="f" type="double" default="10"/>
+                    <holeDepth abbreviation="d" type="double" default="0.1"/>
+                    <contactForce abbreviation="f" type="double" default="20"/>
                 </ph_param>
             </ph>
-            </phc>
+            <phc/>
 */
 
 #ifndef PEG_IN_HOLE_H
@@ -62,8 +62,8 @@ private:
 struct phParam final:public aris::server::GaitParamBase
 {
     std::int32_t totalCount{ 2000 }; //插入过程所需时间
-    double holeDepth{ 0.2 }; //插孔深度
-    double contactForce{ 10 }; //接触力判断阈值
+    double holeDepth{ 0.1 }; //插孔深度
+    double contactForce{ 20 }; //接触力判断阈值
 };
 
 struct mbParam final:public aris::server::GaitParamBase

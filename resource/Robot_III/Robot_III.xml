@@ -600,8 +600,8 @@
             <ph default="ph_param">
                 <ph_param type="group">
                     <totalCount abbreviation="t" type="int" default="2000"/>
-                    <holeDepth abbreviation="d" type="double" default="0.2"/>
-                    <contactForce abbreviation="f" type="double" default="10"/>
+                    <holeDepth abbreviation="d" type="double" default="0.1"/>
+                    <contactForce abbreviation="f" type="double" default="20"/>
                 </ph_param>
             </ph>
             <phc/>
