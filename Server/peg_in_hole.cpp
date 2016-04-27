@@ -331,6 +331,8 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         rt_printf("Gait finished.\n");
         rt_printf("FinalPeb: %f %f %f\n", Peb[0], Peb[1], Peb[2]);
 
+        std::fill(bodyDisp, bodyDisp + 3, 0);
+        std::fill(bodyVel, bodyVel + 3, 0);
         process = PegInHoleProcess::PREPARE;
         PhState::getState().isContinued() = false;
         isReturning = false;
