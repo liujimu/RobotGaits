@@ -63,7 +63,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     double forceOffsetAvg[6]{ 0 };
     double realForceData[6]{ 0 };
     double forceInBody[6]{ 0 };
-    const double kForceThreshold[6]{ 20, 20, 20, 20, 20, 20 }; //力传感器的触发阈值,单位N或Nm
+    const double kForceThreshold[6]{ 20, 20, 20, 30, 30, 30 }; //力传感器的触发阈值,单位N或Nm
     const double kForceMax[6]{ 100, 100, 100, 50, 50, 50 }; //力的上限
 
     //找孔中心
@@ -133,7 +133,8 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             {
                 alignFlag = true;
             }
-            if (alignFlag && maxVel < 0.0001)
+            double forceInBodyMag = std::sqrt(std::pow(forceInBody[0], 2) + std::pow(forceInBody[2], 2));
+            if (alignFlag && forceInBodyMag < param.contactForce / 2 && maxVel < 0.0001)
             {
                 process = PegInHoleProcess::ALIGN;
                 std::fill(bodyVel, bodyVel + 3, 0);
@@ -220,9 +221,9 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             double forceInBodyMag = std::sqrt(std::pow(forceInBody[0], 2) + std::pow(forceInBody[2], 2));
             if (param.count - beginCount > 500 && forceInBodyMag > param.contactForce)
             {
-                ++step;
                 std::copy(Peb, Peb + 3, contactPos[step]);
                 std::fill(bodyVel, bodyVel + 3, 0);
+                ++step;
                 beginCount = param.count + 1;
                 //for test
                 rt_printf("\nProcess: %d\n", (int)process);
@@ -287,7 +288,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         {
             if (!returnFlag)
             {
-                if( std::fabs(forceInBody[1]) > kForceThreshold[1] )
+                if( forceInBody[1] < -kForceThreshold[1] )
                 {
                     beginCount = param.count + 1;
                     returnFlag = true;
