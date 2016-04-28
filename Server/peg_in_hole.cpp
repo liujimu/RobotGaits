@@ -30,14 +30,7 @@ auto pegInHoleParse(const std::string &cmd, const std::map<std::string, std::str
         }
     }
 
-    PhState::getState().isContinued() = false;
-
     msg.copyStruct(param);
-}
-
-auto pegInHoleContinueParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void
-{
-    PhState::getState().isContinued() = true;
 }
 
 auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int
@@ -59,28 +52,30 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     double M[3]{ 1, 1, 1 };
     double K[3]{ 0, 0, 0 };
     double C[3]{ 50, 50, 50 };
-    const double kClockPeriod{ 0.001 };
-    static double bodyDisp[3]{ 0 };
-    static double bodyVel[3]{ 0 };
     double bodyAcc[3]{ 0 };
+    static double bodyVel[3]{ 0 };
+    static double bodyDisp[3]{ 0 };
+    static double maxVel{ 0 };
+    const double kClockPeriod{ 0.001 };
 
     //力传感器数据
     static double forceOffsetSum[6]{ 0 };
     double forceOffsetAvg[6]{ 0 };
     double realForceData[6]{ 0 };
     double forceInBody[6]{ 0 };
-    const double kForceThreshold[6]{ 20, 20, 20, 100, 100, 100 }; //力传感器的触发阈值,单位N或Nm
-    const double kForceMax[6]{ 100, 100, 100, 500, 500, 500 }; //力的上限
+    const double kForceThreshold[6]{ 20, 20, 20, 20, 20, 20 }; //力传感器的触发阈值,单位N或Nm
+    const double kForceMax[6]{ 100, 100, 100, 50, 50, 50 }; //力的上限
 
     //找孔中心
+    static mbParam mb_param;
     static double contactPos[3][3]{ 0 };
     static double holeCenterPos[3]{ 0 };
     static PegInHoleProcess process{ PegInHoleProcess::PREPARE };
     static std::int32_t step{ 0 };
     static std::int32_t beginCount{ 0 };
-    static mbParam mb_param;
+    static bool returnFlag{ false };
+    static bool alignFlag{ false };
     const double kClearance{ 0.04 };
-    static bool isReturning{ false };
 
     double Peb[6], Pee[18];
     std::fill(Peb, Peb + 6, 0);
@@ -92,6 +87,16 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         if(param.count == 0)
         {
             std::fill(forceOffsetSum, forceOffsetSum + 6, 0);
+
+            std::fill(bodyDisp, bodyDisp + 3, 0);
+            std::fill(bodyVel, bodyVel + 3, 0);
+            maxVel = 0;
+            std::fill(holeCenterPos, holeCenterPos + 3, 0);
+            process = PegInHoleProcess::PREPARE;
+            step = 0;
+            beginCount = 0;
+            returnFlag = false;
+            alignFlag = false;
         }
         for(int i = 0; i < 6; i++)
         {
@@ -112,27 +117,47 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         }
         //转换到机器人身体坐标系
         aris::dynamic::s_f2f(*robot.forceSensorMak().prtPm(), realForceData, forceInBody);
-
-        //用于显示力的初始值
+        //显示力的初始值
         if(param.count == 100)
         {
-            rt_printf("forceOffsetAvg: %f %f %f\n", forceOffsetAvg[0], forceOffsetAvg[1], forceOffsetAvg[2]);
+            rt_printf("forceOffsetAvg: %f %f %f %f %f %f\n",
+                      forceOffsetAvg[0], forceOffsetAvg[1], forceOffsetAvg[2],
+                      forceOffsetAvg[3], forceOffsetAvg[4], forceOffsetAvg[5]);
         }
 
         //人手推动机器人身体移动
         if (process == PegInHoleProcess::PREPARE)
         {
-            double tmpForce{ 0 };
+            //以绕Y轴的力矩作为判断进入下一流程的标志
+            if (std::fabs(forceInBody[4]) > kForceThreshold[4])
+            {
+                alignFlag = true;
+            }
+            if (alignFlag && maxVel < 0.0001)
+            {
+                process = PegInHoleProcess::ALIGN;
+                std::fill(bodyVel, bodyVel + 3, 0);
+                step = 0;
+
+                //for test
+                rt_printf("Preparation finished.\n\n");
+                rt_printf("\nProcess: %d\n", (int)process);
+                rt_printf("Step: %d\n", (int)step);
+                rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
+                rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
+            }
+
+            double maxForce{ 0 };
             int index{ 0 };
             for (int i = 0; i < 3; i++)
             {
-                if (std::fabs(forceInBody[i]) > tmpForce)
+                if (std::fabs(forceInBody[i]) > maxForce)
                 {
-                    tmpForce = std::fabs(forceInBody[i]);
+                    maxForce = std::fabs(forceInBody[i]);
                     index = i;
                 }
             }
-            if (tmpForce > kForceThreshold[index])
+            if (maxForce > kForceThreshold[index])
             {
                 for (int i = 0; i < 3; i++)
                 {
@@ -140,7 +165,7 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                 }
             }
 
-            double maxVel{ 0 };
+            maxVel = 0;
             for (int i = 0; i < 3; i++)
             {
                 bodyAcc[i] = (F[i] - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
@@ -152,24 +177,10 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                     maxVel = std::fabs(bodyVel[i]);
                 }
             }
+
             std::copy(bodyDisp, bodyDisp + 3, Peb);
             robot.SetPeb(Peb, beginMak);
             robot.SetPee(Pee, beginMak);
-
-            if( PhState::getState().isContinued() && maxVel < 0.0001)
-            {
-                process = PegInHoleProcess::ALIGN;
-                std::fill(bodyVel, bodyVel + 3, 0);
-                step = 0;
-
-                //for test
-                rt_printf("Preparation finished.\n\n");
-                rt_printf("\nProcess: %d\n", (int)process);
-                rt_printf("Step: %d\n", (int)step);
-                rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
-                rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
-                rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
-            }
         }
 
         //碰边，找孔中心
@@ -197,25 +208,25 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             //使用阻抗模型计算身体位移、速度、加速度
             for (int i = 0; i < 3; i++)
             {
-                bodyAcc[i] = (F[i] / 4 - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
+                bodyAcc[i] = (F[i] / 2 - C[i] * bodyVel[i] - K[i] * bodyDisp[i]) / M[i];
                 bodyVel[i] += bodyAcc[i] * kClockPeriod;
                 bodyDisp[i] += bodyVel[i] * kClockPeriod;
             }
             std::copy(bodyDisp, bodyDisp + 3, Peb);
             robot.SetPeb(Peb, beginMak);
             robot.SetPee(Pee, beginMak);
+
             //当接触力超过阈值时，记录当前身体坐标为接触点坐标，并开始寻找下一个接触点
             double forceInBodyMag = std::sqrt(std::pow(forceInBody[0], 2) + std::pow(forceInBody[2], 2));
             if (param.count - beginCount > 500 && forceInBodyMag > param.contactForce)
             {
+                ++step;
                 std::copy(Peb, Peb + 3, contactPos[step]);
                 std::fill(bodyVel, bodyVel + 3, 0);
-                ++step;
                 beginCount = param.count + 1;
                 //for test
                 rt_printf("\nProcess: %d\n", (int)process);
                 rt_printf("Step: %d\n", (int)step);
-                rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
                 rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
                 rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
 
@@ -227,7 +238,6 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                         holeCenterPos[i] = (contactPos[0][i] + contactPos[2][i]) / 2;
                     }
                     process = PegInHoleProcess::INSERT;
-                    PhState::getState().isContinued() = false;
                     step = 0;
                     //for test
                     rt_printf("Alignment finished.\n\n");
@@ -259,7 +269,6 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                 //for test
                 rt_printf("\nProcess: %d\n", (int)process);
                 rt_printf("Step: %d\n", (int)step);
-                rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
                 rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
                 rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
 
@@ -276,12 +285,12 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         //抽出并返回原位
         else if (process == PegInHoleProcess::RETURN)
         {
-            if (!isReturning)
+            if (!returnFlag)
             {
-                if( PhState::getState().isContinued() )
+                if( std::fabs(forceInBody[1]) > kForceThreshold[1] )
                 {
                     beginCount = param.count + 1;
-                    isReturning = true;
+                    returnFlag = true;
                 }
             }
             else
@@ -309,14 +318,12 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
                     //for test
                     rt_printf("\nProcess: %d\n", (int)process);
                     rt_printf("Step: %d\n", (int)step);
-                    rt_printf("Continue State: %d\n\n", PhState::getState().isContinued());
                     rt_printf("ForceInBody: %f %f %f\n", forceInBody[0], forceInBody[1], forceInBody[2]);
                     rt_printf("Peb: %f %f %f\n\n", Peb[0], Peb[1], Peb[2]);
 
                     if (step > 1)
                     {
                         process = PegInHoleProcess::STOP;
-                        step = 0;
                         //for test
                         rt_printf("Body returned.\n\n");
                     }
@@ -336,14 +343,6 @@ auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
     {
         //for test
         rt_printf("Gait finished.\n");
-
-        std::fill(bodyDisp, bodyDisp + 3, 0);
-        std::fill(bodyVel, bodyVel + 3, 0);
-        process = PegInHoleProcess::PREPARE;
-        PhState::getState().isContinued() = false;
-        step = 0;
-        beginCount = 0;
-        isReturning = false;
 
         return 0;
     }

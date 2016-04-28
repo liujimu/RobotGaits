@@ -604,7 +604,6 @@
                     <contactForce abbreviation="f" type="double" default="20"/>
                 </ph_param>
             </ph>
-            <phc/>
         </Commands>
     </Server>
     <Controller>

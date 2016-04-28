@@ -44,20 +44,6 @@ enum class PegInHoleProcess
     STOP = 4,
 };
 
-class PhState
-{
-public:
-    static PhState& getState()
-    {
-        static PhState s;
-        return s;
-    }
-    bool& isContinued() { return isContinued_; }
-private:
-    bool isContinued_{ false };
-    PhState() = default;
-};
-
 /*gait parameters*/
 struct phParam final:public aris::server::GaitParamBase
 {
@@ -76,7 +62,6 @@ struct mbParam final:public aris::server::GaitParamBase
 
 /*parse function*/
 auto pegInHoleParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
-auto pegInHoleContinueParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)->void;
 
 /*operation function*/
 auto pegInHoleGait(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)->int;

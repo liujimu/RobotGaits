@@ -68,7 +68,6 @@ int main(int argc, char *argv[])
     rs.addCmd("pr", pushRecoveryParse, pushRecoveryGait);
     rs.addCmd("prs", pushRecoveryStopParse, pushRecoveryGait);
     rs.addCmd("ph", pegInHoleParse, pegInHoleGait);
-    rs.addCmd("phc", pegInHoleContinueParse, pegInHoleGait);
     //rs.addCmd("cmb", parseContinuousMoveBegin, continuousMove);
     //rs.addCmd("cmj", parseContinuousMoveJudge, continuousMove);
     rs.addCmd("tw", twistWaistParse, twistWaistGait);
