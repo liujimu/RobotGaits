@@ -532,6 +532,13 @@
                     <beta abbreviation="b" type="double" default="0"/>
                 </wk_param>
             </wk>
+            <cc default="cc_param">
+                <cc_param type="group">
+                    <totalCount abbreviation="t" type="int" default="2000"/>
+                    <chasmWidth abbreviation="d" type="double" default="1"/>
+                    <stepHeight abbreviation="h" type="double" default="0.05"/>
+                </cc_param>
+            </cc>
             <ro/>
         </Commands>
     </Server>

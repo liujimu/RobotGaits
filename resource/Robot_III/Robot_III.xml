@@ -604,6 +604,13 @@
                     <contactForce abbreviation="f" type="double" default="20"/>
                 </ph_param>
             </ph>
+            <cc default="cc_param">
+                <cc_param type="group">
+                    <totalCount abbreviation="t" type="int" default="2000"/>
+                    <chasmWidth abbreviation="d" type="double" default="1"/>
+                    <stepHeight abbreviation="h" type="double" default="0.05"/>
+                </cc_param>
+            </cc>
         </Commands>
     </Server>
     <Controller>
