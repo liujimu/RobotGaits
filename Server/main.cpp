@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     }
     else if (std::string(argv[1]) == "VIII")
     {
-        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_VIII/Robot_VIII.xml";
+        xml_address = "/home/hex/Desktop/RobotGaits/resource/Robot_VIII.xml";
     }
     else
     {
